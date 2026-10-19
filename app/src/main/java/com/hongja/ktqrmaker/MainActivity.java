@@ -213,7 +213,8 @@ public class MainActivity extends Activity {
       p.setTextAlign(Paint.Align.CENTER);
       p.setTextSize(34);
       drawFit(c,p,ssid.getText().toString(),653,1263,234);
-      drawFit(c,p,pass.getText().toString(),653,1340,234);
+      // Center password text vertically inside the white row, clear of its red bottom border.
+      drawFit(c,p,pass.getText().toString(),653,1326,234);
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
