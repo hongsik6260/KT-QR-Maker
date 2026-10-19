@@ -21,7 +21,9 @@ public class MainActivity extends Activity {
   EditText ssid, pass, phone;
   Spinner paper, security;
   CheckBox hiddenNetwork;
-  ImageView preview;
+  ImageView preview, importedPhoto;
+  TextView photoStatus;
+  Bitmap importedBitmap;
   Bitmap poster;
   static final int PICK=1, CAMERA=2, BACKGROUND=4;
   Bitmap background;
@@ -87,7 +89,9 @@ public class MainActivity extends Activity {
     LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER);zone.addView(buttons);
     action(buttons,"사진 촬영",true,()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
     action(buttons,"사진 선택",false,()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
-    photo.addView(text("사진 없이 직접 입력해도 만들 수 있어요.",13,0xff667d70,false));
+    importedPhoto=new ImageView(this);importedPhoto.setAdjustViewBounds(true);importedPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);importedPhoto.setVisibility(View.GONE);zone.addView(importedPhoto,new LinearLayout.LayoutParams(-1,dp(190)));
+    photoStatus=text("사진 없이 직접 입력해도 만들 수 있어요.",13,0xff667d70,false);photo.addView(photoStatus);
+    TextView selectAgain=text("사진을 불러온 뒤 초록색 선택 영역을 조절해 글자를 읽습니다.",12,0xff667d70,false);photo.addView(selectAgain);
     LinearLayout details=card(root,"②","이름과 암호 확인");
     details.addView(text("사진 인식 후 대소문자와 숫자 0·영문 O 등을 확인하세요.",13,0xff829087,false));
     smallLabel(details,"무선랜명 (SSID)");ssid=input(details,"예: KT_GiGA_5G_1234","");
@@ -126,6 +130,10 @@ public class MainActivity extends Activity {
       if(req==PICK){try(InputStream in=getContentResolver().openInputStream(data.getData())){bmp=BitmapFactory.decodeStream(in);}}
       else bmp=(Bitmap)data.getExtras().get("data");
       if(bmp==null){toast("사진을 읽지 못했습니다");return;}
+      importedBitmap=bmp;
+      importedPhoto.setImageBitmap(bmp);
+      importedPhoto.setVisibility(View.VISIBLE);
+      photoStatus.setText("사진 불러오기 완료 · 초록색 영역으로 무선랜명과 암호를 선택하세요.");
       showCrop(bmp);
     }catch(Exception e){toast("사진 오류: "+e.getMessage());}
   }
