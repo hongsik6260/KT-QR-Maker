@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
   }
   String value(String line,int i,String[] lines){int a=line.indexOf(':');if(a<0)a=line.indexOf('：');String v=a>=0?line.substring(a+1).trim():"";if(v.isEmpty()&&i+1<lines.length)v=lines[i+1].trim();return v;}
   String wifi(){return "WIFI:T:WPA;S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";;";}
-  String esc(String v){return v.replace("\\","\\\\").replace(";","\\;").replace(":","\\:").replace(",","\\,").replace("\"","\\\"");}
+  String esc(String v){String slash=Character.toString((char)92);return v.replace(slash,slash+slash).replace(";",slash+";").replace(":",slash+":").replace(",",slash+",");}
   Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,1,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
   void render(){try{String s=ssid.getText().toString().trim();if(s.isEmpty()){toast("무선랜명을 입력하세요");return;}
     int idx=paper.getSelectedItemPosition(),w=widths[idx],h=heights[idx];poster=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
     pendingPdf=pdf;startActivityForResult(intent,3);
   }catch(Exception e){toast(e.getMessage());}}
   boolean pendingPdf;
-  @Override protected void onActivityResult2(int r,int s,Intent d){}
+
   void writeOutput(Uri uri){try(OutputStream out=getContentResolver().openOutputStream(uri)){
     if(pendingPdf){PdfDocument doc=new PdfDocument();PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(poster.getWidth(),poster.getHeight(),1).create();PdfDocument.Page page=doc.startPage(info);page.getCanvas().drawBitmap(poster,0,0,null);doc.finishPage(page);doc.writeTo(out);doc.close();}
     else poster.compress(Bitmap.CompressFormat.PNG,100,out);toast("저장 완료");
