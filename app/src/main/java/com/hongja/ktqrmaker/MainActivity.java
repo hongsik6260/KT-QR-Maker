@@ -241,14 +241,14 @@ public class MainActivity extends Activity {
       p.setColor(Color.WHITE);
       c.drawRect(530,1230,778,1272,p);
       // Keep the password field white without painting over its red border.
-      c.drawRect(530,1299,758,1359,p);
+      c.drawRect(530,1299,799,1351,p);
       p.setColor(0xff111111);
       p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
       p.setTextAlign(Paint.Align.CENTER);
       p.setTextSize(34);
       drawFit(c,p,ssid.getText().toString(),653,1263,234);
       // Center password text vertically inside the white row, clear of its red bottom border.
-      drawFit(c,p,pass.getText().toString(),653,1341,224);
+      drawFit(c,p,pass.getText().toString().trim(),653,1341,246);
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
@@ -266,7 +266,7 @@ public class MainActivity extends Activity {
         android.content.ContentValues values=new android.content.ContentValues();
         values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME,name);
         values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE,pdf?"application/pdf":"image/png");
-        values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH,"DCIM/Camera/");
+        values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH,pdf?"Documents/KT-QR/":"Pictures/KT-QR/");
         values.put(android.provider.MediaStore.MediaColumns.IS_PENDING,1);
         Uri collection=pdf?android.provider.MediaStore.Files.getContentUri("external_primary"):
           android.provider.MediaStore.Images.Media.getContentUri("external_primary");
@@ -278,7 +278,7 @@ public class MainActivity extends Activity {
           android.content.ContentValues done=new android.content.ContentValues();
           done.put(android.provider.MediaStore.MediaColumns.IS_PENDING,0);
           getContentResolver().update(uri,done,null,null);
-          toast("저장 완료: 내 파일 > 내장 저장공간 > DCIM > Camera");
+          toast(pdf?"PDF 저장 완료: 내 파일 > 문서 > KT-QR":"PNG 저장 완료: 내 파일 > 사진 > KT-QR");
           return;
         }catch(Exception e){
           if(uri!=null)getContentResolver().delete(uri,null,null);
