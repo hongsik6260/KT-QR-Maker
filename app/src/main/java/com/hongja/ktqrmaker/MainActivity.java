@@ -171,6 +171,24 @@ public class MainActivity extends Activity {
       TextView header=text("인식 결과 후보 · 눌러서 적용하세요",15,0xff176c53,true);
       ocrCandidates.addView(header);
       if(mode==0){
+        String foundName=null,foundPassword=null;
+        for(int i=0;i<choices.length;i++){
+          String line=choices[i].trim();
+          String clean=line.replace(" ","");
+          if(clean.matches("(?i).*(무선랜명|SSID|네트워크이름).*")){
+            String v=line.replaceFirst("(?i)^.*?(?:무선랜명|SSID|네트워크이름) *[:：]? *","").trim();
+            if(!v.isEmpty())foundName=v;
+            else if(i+1<choices.length)foundName=choices[i+1].trim();
+          }
+          if(clean.matches("(?i).*(암호키|암호|비밀번호|PASSWORD|PASS).*")){
+            String v=line.replaceFirst("(?i)^.*?(?:암호키|암호|비밀번호|PASSWORD|PASS) *[:：]? *","").trim();
+            if(!v.isEmpty())foundPassword=v;
+            else if(i+1<choices.length)foundPassword=choices[i+1].trim();
+          }
+        }
+        if(foundName!=null)ssid.setText(foundName);
+        if(foundPassword!=null)pass.setText(foundPassword);
+        if(foundName!=null||foundPassword!=null)toast("자동 인식 결과를 확인하세요");
         TextView hint=text("각 인식 결과에서 무선랜명 또는 암호를 따로 선택하세요.",13,0xff667d70,false);
         ocrCandidates.addView(hint);
         for(String choice:choices){
@@ -241,7 +259,7 @@ public class MainActivity extends Activity {
       // Fill the inside of the original red QR frame without covering its border.
       p.setColor(Color.WHITE);c.drawRect(389,912,696,1205,p);
       Bitmap qrImage=qr(300);
-      c.drawBitmap(qrImage,null,new android.graphics.Rect(395,918,690,1199),p);
+      c.drawBitmap(qrImage,null,new android.graphics.Rect(398,921,687,1196),p);
       // Preserve red labels and outlines; edit only the white value fields.
       p.setColor(Color.WHITE);
       c.drawRect(530,1230,778,1272,p);
