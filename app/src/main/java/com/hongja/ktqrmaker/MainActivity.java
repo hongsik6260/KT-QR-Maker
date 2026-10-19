@@ -68,7 +68,13 @@ public class MainActivity extends Activity {
     ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(0xfff4f6f3);
     LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(22),dp(20),dp(28));
     scroll.addView(root);setContentView(scroll);
-    TextView brand=text("▦   KT WiFi QR생성",22,0xff1c4435,true);root.addView(brand);
+    LinearLayout brandRow=new LinearLayout(this);brandRow.setGravity(Gravity.CENTER_VERTICAL);root.addView(brandRow);
+    ImageView logo=new ImageView(this);logo.setImageResource(com.hongja.ktqrmaker.R.drawable.kt_app_icon);
+    LinearLayout.LayoutParams logoLp=new LinearLayout.LayoutParams(dp(52),dp(52));logoLp.setMargins(0,0,dp(12),0);brandRow.addView(logo,logoLp);
+    TextView brand=text("KT WiFi QR생성",22,0xff1c4435,true);brandRow.addView(brand);
+    TextView affiliation=text("KT서비스남부  |  충청본부 · 대전지점 · 대전지사\\nCS4팀(금산)  김홍식",12,0xff667d70,false);
+    affiliation.setText(affiliation.getText().toString().replace("\\n","\n"));
+    LinearLayout.LayoutParams affiliationLp=new LinearLayout.LayoutParams(-1,-2);affiliationLp.setMargins(0,dp(8),0,0);root.addView(affiliation,affiliationLp);
     TextView sub=text("현장에서 간편하게 만드는 연결 안내    ·    v1.3 수정판",12,0xff7b8981,false);root.addView(sub);
     TextView kicker=text("W I - F I   C A R D   M A K E R",12,0xff197359,true);
     LinearLayout.LayoutParams kl=new LinearLayout.LayoutParams(-1,-2);kl.setMargins(0,dp(52),0,dp(18));root.addView(kicker,kl);
