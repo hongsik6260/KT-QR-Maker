@@ -206,14 +206,14 @@ public class MainActivity extends Activity {
       c.drawBitmap(qrImage,null,new android.graphics.Rect(393,915,692,1202),p);
       // Preserve red labels and outlines; edit only the white value fields.
       p.setColor(Color.WHITE);
-      c.drawRect(506,1157,780,1214,p);
-      c.drawRect(506,1226,780,1282,p);
+      c.drawRect(532,1166,790,1206,p);
+      c.drawRect(532,1235,790,1275,p);
       p.setColor(0xff111111);
       p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
       p.setTextAlign(Paint.Align.CENTER);
       p.setTextSize(34);
-      drawFit(c,p,ssid.getText().toString(),643,1195,256);
-      drawFit(c,p,pass.getText().toString(),643,1265,256);
+      drawFit(c,p,ssid.getText().toString(),660,1195,242);
+      drawFit(c,p,pass.getText().toString(),660,1265,242);
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
