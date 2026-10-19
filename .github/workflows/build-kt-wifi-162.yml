@@ -38,7 +38,18 @@ jobs:
           for before,after in fixes.items():
               if before not in s: raise RuntimeError('Expected v5 layout not found: '+before)
               s=s.replace(before,after)
+          s=s.replace('w*.255','w*.289')
           p.write_text(s)
+          a=Path('app/src/main/assets/app.js')
+          s=a.read_text()
+          s=s.replace("results.sort((a,b)=>b.confidence-a.confidence);","results.sort((a,b)=>(b.confidence||0)-(a.confidence||0));")
+          s=s.replace("if(!v.ssid&&!v.password)continue;","if(target==='password' && v.password){v.password=v.password.replace(/^(?:암\\s*호\\s*키?|비밀\\s*번호|password|Wi-?Fi\\s*key)\\s*[:：]?\\s*/i,'').replace(/\\s/g,'');}if(!v.ssid&&!v.password)continue;")
+          old="c.getContext('2d').drawImage(image,r.x*(image.width/pc.width),r.y*(image.height/pc.height),r.w*(image.width/pc.width),r.h*(image.height/pc.height),0,0,c.width,c.height);"
+          new="""const oc=c.getContext('2d');oc.imageSmoothingEnabled=true;oc.imageSmoothingQuality='high';oc.drawImage(image,r.x*(image.width/pc.width),r.y*(image.height/pc.height),r.w*(image.width/pc.width),r.h*(image.height/pc.height),0,0,c.width,c.height);
+if(activeTarget==='password'){const data=oc.getImageData(0,0,c.width,c.height),a=data.data;let lo=255,hi=0;for(let i=0;i<a.length;i+=4){const y=.299*a[i]+.587*a[i+1]+.114*a[i+2];lo=Math.min(lo,y);hi=Math.max(hi,y)}const range=Math.max(40,hi-lo);for(let i=0;i<a.length;i+=4){const y=.299*a[i]+.587*a[i+1]+.114*a[i+2];const v=Math.max(0,Math.min(255,(y-lo)*255/range));a[i]=a[i+1]=a[i+2]=v}oc.putImageData(data,0,0)}"""
+          if old not in s: raise RuntimeError('OCR patch location not found')
+          s=s.replace(old,new)
+          a.write_text(s)
           PY
       - name: Build APK
         working-directory: wifi-project
@@ -47,5 +58,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: KT-WIFI-QR-1.6.2-Poster-v6-APK
+          name: KT-WIFI-QR-1.6.2-Poster-v7-APK
           path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
