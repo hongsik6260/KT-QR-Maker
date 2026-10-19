@@ -22,34 +22,29 @@ jobs:
         run: |
           mkdir -p wifi-project
           unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
-      - name: Apply v6 layout correction
+      - name: Apply v8 QR and OCR fixes
         working-directory: wifi-project
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('app/src/main/assets/poster.js')
           s=p.read_text()
-          fixes={
-            "w*.267":"w*.255",
-            "left=w*.511-real/2,top=h*.458-real/2":"left=w*.514-real/2,top=h*.686-real/2",
-            "w*.395,h*.812,w*.37":"w*.485,h*.813,w*.31",
-            "w*.395,h*.873,w*.37":"w*.485,h*.868,w*.31"
-          }
-          for before,after in fixes.items():
-              if before not in s: raise RuntimeError('Expected v5 layout not found: '+before)
-              s=s.replace(before,after)
-          s=s.replace('w*.255','w*.289')
+          for a,b in [('w*.267','w*.305'),('left=w*.511-real/2,top=h*.458-real/2','left=w*.514-real/2,top=h*.686-real/2'),('w*.395,h*.812,w*.37','w*.485,h*.813,w*.31'),('w*.395,h*.873,w*.37','w*.485,h*.868,w*.31'),('w*.69,h*.949,w*.53','w*.694,h*.949,w*.52')]:
+              if a not in s: raise RuntimeError('Poster patch target missing: '+a)
+              s=s.replace(a,b)
           p.write_text(s)
-          a=Path('app/src/main/assets/app.js')
-          s=a.read_text()
-          s=s.replace("results.sort((a,b)=>b.confidence-a.confidence);","results.sort((a,b)=>(b.confidence||0)-(a.confidence||0));")
-          s=s.replace("if(!v.ssid&&!v.password)continue;","if(target==='password' && v.password){v.password=v.password.replace(/^(?:암\\s*호\\s*키?|비밀\\s*번호|password|Wi-?Fi\\s*key)\\s*[:：]?\\s*/i,'').replace(/\\s/g,'');}if(!v.ssid&&!v.password)continue;")
-          old="c.getContext('2d').drawImage(image,r.x*(image.width/pc.width),r.y*(image.height/pc.height),r.w*(image.width/pc.width),r.h*(image.height/pc.height),0,0,c.width,c.height);"
-          new="""const oc=c.getContext('2d');oc.imageSmoothingEnabled=true;oc.imageSmoothingQuality='high';oc.drawImage(image,r.x*(image.width/pc.width),r.y*(image.height/pc.height),r.w*(image.width/pc.width),r.h*(image.height/pc.height),0,0,c.width,c.height);
-if(activeTarget==='password'){const data=oc.getImageData(0,0,c.width,c.height),a=data.data;let lo=255,hi=0;for(let i=0;i<a.length;i+=4){const y=.299*a[i]+.587*a[i+1]+.114*a[i+2];lo=Math.min(lo,y);hi=Math.max(hi,y)}const range=Math.max(40,hi-lo);for(let i=0;i<a.length;i+=4){const y=.299*a[i]+.587*a[i+1]+.114*a[i+2];const v=Math.max(0,Math.min(255,(y-lo)*255/range));a[i]=a[i+1]=a[i+2]=v}oc.putImageData(data,0,0)}"""
-          if old not in s: raise RuntimeError('OCR patch location not found')
-          s=s.replace(old,new)
-          a.write_text(s)
+          p=Path('app/src/main/assets/app.js')
+          s=p.read_text()
+          anchor="if(!password&&ssid){const idx="
+          extra="if(!password){for(let i=0;i<lines.length;i++){const m=lines[i].match(/(?:암\\s*호\\s*키?|비밀\\s*번호|password|WLAN\\s*key)\\s*[:：]?\\s*([A-Za-z0-9!@#$%^&*._-]{8,63})/i);if(m){password=m[1];break}}}"
+          if anchor not in s: raise RuntimeError('OCR password parser missing')
+          s=s.replace(anchor,extra+anchor)
+          anchor="const list=$('ocrCandidates');list.replaceChildren();"
+          extra="if(target==='both'){const combined={ssid:'',password:''};for(const r of results){const v=parseLabel(r.text);if(v.ssid&&!combined.ssid)combined.ssid=v.ssid;if(v.password&&!combined.password)combined.password=v.password}if(combined.ssid)$('ssid').value=combined.ssid;if(combined.password)$('password').value=combined.password}"
+          if anchor not in s: raise RuntimeError('OCR candidates anchor missing')
+          s=s.replace(anchor,extra+anchor)
+          s=s.replace("if(!filled){apply();filled=true}","if(!filled){if(target!=='both')apply();else if(v.password&&!$('password').value)$('password').value=v.password;filled=true}")
+          p.write_text(s)
           PY
       - name: Build APK
         working-directory: wifi-project
