@@ -5,7 +5,7 @@ on:
     branches:
       - hongja-wifi-qr-1.6.4-promo
     paths:
-      - 'KT-WIFI-QR-Android-Project-ready.zip'
+      - 'KT-WIFI-QR-1.6.4-OCR-FIX-1.zip'
       - '.github/workflows/build-hongja-promo.yml'
 jobs:
   build:
@@ -14,9 +14,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract Android project
         run: |
-          test -f KT-WIFI-QR-Android-Project-ready.zip || { echo "Upload KT-WIFI-QR-Android-Project-ready.zip to repository root first"; exit 1; }
+          test -f KT-WIFI-QR-1.6.4-OCR-FIX-1.zip || { echo "Upload KT-WIFI-QR-1.6.4-OCR-FIX-1.zip to repository root first"; exit 1; }
           mkdir -p project
-          unzip -q KT-WIFI-QR-Android-Project-ready.zip -d project
+          unzip -q KT-WIFI-QR-1.6.4-OCR-FIX-1.zip -d project
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
