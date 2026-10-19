@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
     LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(22),dp(20),dp(28));
     scroll.addView(root);setContentView(scroll);
     TextView brand=text("▦   KT WiFi QR생성",22,0xff1c4435,true);root.addView(brand);
-    TextView sub=text("현장에서 간편하게 만드는 연결 안내    ·    광고 없음",12,0xff7b8981,false);root.addView(sub);
+    TextView sub=text("현장에서 간편하게 만드는 연결 안내    ·    v1.3 수정판",12,0xff7b8981,false);root.addView(sub);
     TextView kicker=text("W I - F I   C A R D   M A K E R",12,0xff197359,true);
     LinearLayout.LayoutParams kl=new LinearLayout.LayoutParams(-1,-2);kl.setMargins(0,dp(52),0,dp(18));root.addView(kicker,kl);
     TextView hero=text("사진 한 장으로,\\n와이파이 연결을 간편하게.",29,0xff1e382e,true);
