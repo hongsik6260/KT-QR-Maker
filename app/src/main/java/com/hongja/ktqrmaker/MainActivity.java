@@ -22,7 +22,8 @@ public class MainActivity extends Activity {
   Spinner paper;
   ImageView preview;
   Bitmap poster;
-  static final int PICK=1, CAMERA=2, BACKGROUND=4;\n  Bitmap background;
+  static final int PICK=1, CAMERA=2, BACKGROUND=4;
+  Bitmap background;
   Uri photoUri;
   int[] widths={2480,1748,1240,874};
   int[] heights={3508,2480,1748,1240};
@@ -31,7 +32,9 @@ public class MainActivity extends Activity {
     LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(20,20,20,20);
     ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
     TextView title=new TextView(this);title.setText("KT QR 홍보물 제작기");title.setTextSize(24);title.setTextColor(Color.RED);root.addView(title);
-    try{background=BitmapFactory.decodeFile(new File(getFilesDir(),"kt_background.png").getAbsolutePath());}catch(Exception ignored){}\n    addButton(root,"홍보 배경 이미지 등록 (최초 1회)",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,BACKGROUND);});\n    addButton(root,"사진 촬영",()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
+    try{background=BitmapFactory.decodeFile(new File(getFilesDir(),"kt_background.png").getAbsolutePath());}catch(Exception ignored){}
+    addButton(root,"홍보 배경 이미지 등록 (최초 1회)",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,BACKGROUND);});
+    addButton(root,"사진 촬영",()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
     addButton(root,"이미지 첨부 / 문자 추출",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
     ssid=field(root,"무선랜명 (SSID)","");
     pass=field(root,"무선랜 암호","");
@@ -49,7 +52,8 @@ public class MainActivity extends Activity {
   @Override protected void onActivityResult(int req,int result,Intent data){
     super.onActivityResult(req,result,data);
     if(result!=RESULT_OK||data==null)return;
-    if(req==3){writeOutput(data.getData());return;}\n    if(req==BACKGROUND){try(InputStream in=getContentResolver().openInputStream(data.getData())){Bitmap bmp=BitmapFactory.decodeStream(in);if(bmp==null)throw new Exception("이미지 읽기 실패");try(FileOutputStream out=new FileOutputStream(new File(getFilesDir(),"kt_background.png"))){bmp.compress(Bitmap.CompressFormat.PNG,100,out);}background=bmp;toast("KT 홍보 배경 저장 완료");}catch(Exception e){toast(e.getMessage());}return;}
+    if(req==3){writeOutput(data.getData());return;}
+    if(req==BACKGROUND){try(InputStream in=getContentResolver().openInputStream(data.getData())){Bitmap bmp=BitmapFactory.decodeStream(in);if(bmp==null)throw new Exception("이미지 읽기 실패");try(FileOutputStream out=new FileOutputStream(new File(getFilesDir(),"kt_background.png"))){bmp.compress(Bitmap.CompressFormat.PNG,100,out);}background=bmp;toast("KT 홍보 배경 저장 완료");}catch(Exception e){toast(e.getMessage());}return;}
     try{
       Bitmap bmp;
       if(req==PICK){try(InputStream in=getContentResolver().openInputStream(data.getData())){bmp=BitmapFactory.decodeStream(in);}}
