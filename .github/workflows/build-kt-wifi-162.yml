@@ -3,7 +3,7 @@ on:
   push:
     branches: [kt-qr-poster-v1]
     paths:
-      - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v4.zip'
+      - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'
       - '.github/workflows/build-kt-wifi-162.yml'
   workflow_dispatch:
 jobs:
@@ -21,7 +21,7 @@ jobs:
       - name: Unpack project
         run: |
           mkdir -p wifi-project
-          unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v4.zip -d wifi-project
+          unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
       - name: Build APK
         working-directory: wifi-project
         run: gradle :app:assembleDebug --no-daemon
@@ -29,5 +29,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: KT-WIFI-QR-1.6.2-Poster-APK
+          name: KT-WIFI-QR-1.6.2-Poster-v5-APK
           path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
