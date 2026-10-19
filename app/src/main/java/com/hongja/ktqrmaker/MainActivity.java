@@ -27,6 +27,7 @@ public class MainActivity extends Activity {
   CropView inlineCrop;
   LinearLayout cropArea;
   Spinner cropMode;
+  LinearLayout ocrCandidates;
   Bitmap rotatedPhoto;
   ScrollView mainScroll;
   Bitmap poster;
@@ -109,6 +110,7 @@ public class MainActivity extends Activity {
     cropMode=new Spinner(this);cropMode.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"무선랜명 + 암호","무선랜명만","암호만"}));
     cropArea.addView(cropMode,new LinearLayout.LayoutParams(-1,dp(54)));
     addButton(cropArea,"선택 영역 글자 읽기",()->{if(rotatedPhoto!=null)readSelection(inlineCrop.selected(),cropMode.getSelectedItemPosition());});
+    ocrCandidates=new LinearLayout(this);ocrCandidates.setOrientation(1);cropArea.addView(ocrCandidates);
     LinearLayout details=card(root,"②","이름과 암호 확인");
     details.addView(text("사진 인식 후 대소문자와 숫자 0·영문 O 등을 확인하세요.",13,0xff829087,false));
     smallLabel(details,"무선랜명 (SSID)");ssid=input(details,"예: KT_GiGA_5G_1234","");
@@ -148,6 +150,7 @@ public class MainActivity extends Activity {
       else bmp=(Bitmap)data.getExtras().get("data");
       if(bmp==null){toast("사진을 읽지 못했습니다");return;}
       importedBitmap=bmp;
+      if(ocrCandidates!=null)ocrCandidates.removeAllViews();
       rotatedPhoto=bmp;
       inlineCrop.setBitmap(bmp);
       cropArea.setVisibility(View.VISIBLE);
@@ -163,22 +166,35 @@ public class MainActivity extends Activity {
         for(com.google.mlkit.vision.text.Text.Line line:block.getLines()){String v=line.getText().trim();if(!v.isEmpty())candidates.add(v);}
       if(candidates.isEmpty()){toast("글자를 찾지 못했습니다. 영역을 다시 선택하세요.");return;}
       String[] choices=candidates.toArray(new String[0]);
+      // Show recognized alternatives below the photograph, never in a popup.
+      ocrCandidates.removeAllViews();
+      TextView header=text("인식 결과 후보 · 눌러서 적용하세요",15,0xff176c53,true);
+      ocrCandidates.addView(header);
       if(mode==0){
-        LinearLayout fields=new LinearLayout(this);fields.setOrientation(1);
-        EditText name=new EditText(this);name.setHint("무선랜명");name.setText(choices[0]);fields.addView(name);
-        EditText key=new EditText(this);key.setHint("암호");key.setText(choices.length>1?choices[1]:"");fields.addView(key);
-        TextView all=new TextView(this);all.setText("인식 후보: "+android.text.TextUtils.join(" / ",choices));fields.addView(all);
-        new AlertDialog.Builder(this).setTitle("인식 결과 확인 및 수정").setView(fields).setPositiveButton("적용",(d,w)->{ssid.setText(name.getText());pass.setText(key.getText());}).setNegativeButton("취소",null).show();
+        for(int i=0;i<Math.min(choices.length,8);i++){
+          final int index=i;
+          String first=choices[index],second=index+1<choices.length?choices[index+1]:"";
+          Button candidate=new Button(this);
+          candidate.setAllCaps(false);
+          candidate.setText("무선랜명: "+first+"\n암호: "+second);
+          candidate.setTextColor(0xff193d31);
+          candidate.setBackground(shape(0xffe9f3ed,12));
+          ocrCandidates.addView(candidate,new LinearLayout.LayoutParams(-1,dp(76)));
+          candidate.setOnClickListener(v->{ssid.setText(first);pass.setText(second);toast("무선랜명과 암호 적용 완료");});
+        }
       }else{
-        new AlertDialog.Builder(this).setTitle("인식 후보 선택").setSingleChoiceItems(choices,0,(d,which)->{
-          EditText edit=new EditText(this);edit.setSingleLine(true);edit.setText(choices[which]);
-          d.dismiss();new AlertDialog.Builder(this).setTitle("글자 확인 및 수정").setView(edit).setPositiveButton("적용",(a,w)->{if(mode==1)ssid.setText(edit.getText());else pass.setText(edit.getText());}).setNegativeButton("취소",null).show();
-        }).setNegativeButton("취소",null).show();
+        for(String choice:choices){
+          Button candidate=new Button(this);candidate.setAllCaps(false);
+          candidate.setText(choice);candidate.setTextColor(0xff193d31);
+          candidate.setBackground(shape(0xffe9f3ed,12));
+          LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(52));lp.setMargins(0,dp(4),0,dp(4));ocrCandidates.addView(candidate,lp);
+          candidate.setOnClickListener(v->{if(mode==1)ssid.setText(choice);else pass.setText(choice);toast("선택한 글자를 적용했습니다");});
+        }
       }
     }).addOnFailureListener(e->toast("문자 인식 실패: "+e.getMessage()));
   }
   class CropView extends View{
-    Bitmap bitmap;Paint paint=new Paint(3);android.graphics.RectF selection=new android.graphics.RectF(.1f,.25f,.9f,.65f);float px,py;boolean resize;
+    Bitmap bitmap;Paint paint=new Paint(3);android.graphics.RectF selection=new android.graphics.RectF(.1f,.25f,.9f,.65f);float px,py,startX,startY;boolean resize,drawing;
     CropView(Context c,Bitmap b){super(c);bitmap=b;}
     void setBitmap(Bitmap b){bitmap=b;selection.set(.1f,.25f,.9f,.65f);invalidate();}
     void selectAll(){selection.set(0,0,1,1);invalidate();}
@@ -195,9 +211,9 @@ public class MainActivity extends Activity {
     @Override public boolean onTouchEvent(android.view.MotionEvent e){
       if(bitmap==null)return false;
       android.graphics.RectF d=fit();float x=(e.getX()-d.left)/d.width(),y=(e.getY()-d.top)/d.height();
-      if(e.getAction()==0){px=x;py=y;resize=Math.abs(x-selection.right)<.13f&&Math.abs(y-selection.bottom)<.13f;return true;}
+      if(e.getAction()==0){getParent().requestDisallowInterceptTouchEvent(true);px=x;py=y;startX=x;startY=y;resize=Math.abs(x-selection.right)<.10f&&Math.abs(y-selection.bottom)<.10f;drawing=!resize&&!selection.contains(x,y);return true;}
       if(e.getAction()==1||e.getAction()==2){float dx=x-px,dy=y-py;
-        if(resize){selection.right=Math.max(selection.left+.08f,Math.min(1,selection.right+dx));selection.bottom=Math.max(selection.top+.05f,Math.min(1,selection.bottom+dy));}
+        if(drawing){selection.set(Math.max(0,Math.min(startX,x)),Math.max(0,Math.min(startY,y)),Math.min(1,Math.max(startX,x)),Math.min(1,Math.max(startY,y)));if(selection.width()<.02f)selection.right=Math.min(1,selection.left+.02f);if(selection.height()<.02f)selection.bottom=Math.min(1,selection.top+.02f);}\n        else if(resize){selection.right=Math.max(selection.left+.08f,Math.min(1,selection.right+dx));selection.bottom=Math.max(selection.top+.05f,Math.min(1,selection.bottom+dy));}
         else {float l=Math.max(0,Math.min(1-selection.width(),selection.left+dx)),t=Math.max(0,Math.min(1-selection.height(),selection.top+dy));selection.offsetTo(l,t);}
         px=x;py=y;invalidate();return true;}return true;
     }
