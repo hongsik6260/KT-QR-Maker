@@ -130,35 +130,28 @@ public class MainActivity extends Activity {
   String wifi(){return "WIFI:T:WPA;S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";;";}
   String esc(String v){String slash=Character.toString((char)92);return v.replace(slash,slash+slash).replace(";",slash+";").replace(":",slash+":").replace(",",slash+",");}
   Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,1,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
-  void render(){try{String s=ssid.getText().toString().trim();if(s.isEmpty()){toast("무선랜명을 입력하세요");return;}
-    int idx=paper.getSelectedItemPosition(),w=widths[idx],h=heights[idx];poster=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
-    Canvas c=new Canvas(poster);c.drawColor(Color.WHITE);Paint p=new Paint(3);float k=w/1085f;
-    if(background!=null){
+  void render(){
+    poster=null;
+    if(background==null){toast("KT 광고 원본 이미지가 APK에 없습니다. 원본 포함 빌드가 필요합니다.");return;}
+    if(ssid.getText().toString().trim().isEmpty()){toast("무선랜명을 입력하세요");return;}
+    try{
+      int idx=paper.getSelectedItemPosition(),w=widths[idx],h=heights[idx];
+      poster=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
+      Canvas c=new Canvas(poster);Paint p=new Paint(3);
       c.drawBitmap(background,null,new android.graphics.Rect(0,0,w,h),p);
-      // Mask old QR and original sample text, leaving surrounding artwork intact.
-      p.setColor(Color.WHITE);
-      c.drawRoundRect(380*k,865*k,698*k,1146*k,8*k,8*k,p);
-      int q=(int)(258*k);Bitmap qrImage=qr(q);
-      c.drawBitmap(qrImage,410*k,877*k,p);
-      // White text-value areas only: retain original red field labels and borders.
-      c.drawRect(527*k,1156*k,774*k,1210*k,p);
-      c.drawRect(527*k,1225*k,774*k,1280*k,p);
-      p.setColor(Color.BLACK);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(34*k);
-      drawFit(c,p,ssid.getText().toString(),535*k,1199*k,226*k);
-      drawFit(c,p,pass.getText().toString(),535*k,1265*k,226*k);
-      p.setColor(Color.BLACK);c.drawRoundRect(497*k,1347*k,1027*k,1427*k,22*k,22*k,p);
-      p.setColor(Color.YELLOW);p.setTextSize(57*k);
-      drawFit(c,p,phone.getText().toString(),520*k,1409*k,480*k);
-    }else{
-      p.setColor(Color.rgb(225,0,38));c.drawRect(0,0,w,500*k,p);
-      p.setColor(Color.WHITE);p.setTextSize(115*k);c.drawText("KT Wi-Fi",100*k,260*k,p);
-      p.setColor(Color.BLACK);p.setTextSize(54*k);c.drawText("무선랜명: "+ssid.getText(),100*k,1200*k,p);
-      c.drawText("암호: "+pass.getText(),100*k,1290*k,p);
-      Bitmap qrImage=qr((int)(560*k));c.drawBitmap(qrImage,260*k,500*k,p);
-      c.drawText("상담: "+phone.getText(),100*k,1430*k,p);
-    }
-    preview.setImageBitmap(poster);toast("미리보기 생성 완료");
-  }catch(Exception e){toast("생성 오류: "+e.getMessage());}}
+      c.save();c.scale(w/1085f,h/1536f);
+      p.setColor(Color.WHITE);c.drawRect(396,924,685,1198,p);
+      Bitmap qrImage=qr(265);c.drawBitmap(qrImage,408,928,p);
+      c.drawRect(528,1219,820,1274,p);c.drawRect(528,1280,820,1336,p);
+      p.setColor(0xff111111);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(37);
+      drawFit(c,p,ssid.getText().toString(),535,1256,280);
+      drawFit(c,p,pass.getText().toString(),535,1318,280);
+      p.setColor(0xff0a0a0a);c.drawRoundRect(493,1418,1043,1506,20,20,p);
+      p.setColor(0xffffff1c);p.setTextSize(65);
+      drawFit(c,p,phone.getText().toString(),515,1482,515);
+      c.restore();preview.setImageBitmap(poster);toast("KT 광고 이미지 생성 완료");
+    }catch(Exception e){toast("생성 오류: "+e.getMessage());}
+  }
   void drawFit(Canvas c,Paint p,String text,float x,float y,float maxWidth){float initial=p.getTextSize();while(p.measureText(text)>maxWidth && p.getTextSize()>12){p.setTextSize(p.getTextSize()*.92f);}c.drawText(text,x,y,p);p.setTextSize(initial);}
   void save(boolean pdf){try{render();if(poster==null)return;String name="KT_QR_"+System.currentTimeMillis()+(pdf?".pdf":".png");
     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType(pdf?"application/pdf":"image/png");intent.putExtra(Intent.EXTRA_TITLE,name);
@@ -167,7 +160,7 @@ public class MainActivity extends Activity {
   boolean pendingPdf;
 
   void writeOutput(Uri uri){try(OutputStream out=getContentResolver().openOutputStream(uri)){
-    if(pendingPdf){PdfDocument doc=new PdfDocument();PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(poster.getWidth(),poster.getHeight(),1).create();PdfDocument.Page page=doc.startPage(info);page.getCanvas().drawBitmap(poster,0,0,null);doc.finishPage(page);doc.writeTo(out);doc.close();}
+    if(pendingPdf){PdfDocument doc=new PdfDocument();int i=paper.getSelectedItemPosition();int[] pw={595,420,298,210},ph={842,595,420,298};PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pw[i],ph[i],1).create();PdfDocument.Page page=doc.startPage(info);page.getCanvas().drawBitmap(poster,null,new android.graphics.Rect(0,0,pw[i],ph[i]),new Paint(3));doc.finishPage(page);doc.writeTo(out);doc.close();}
     else poster.compress(Bitmap.CompressFormat.PNG,100,out);toast("저장 완료");
   }catch(Exception e){toast("저장 실패: "+e.getMessage());}}
 }
