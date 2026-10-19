@@ -24,6 +24,10 @@ public class MainActivity extends Activity {
   ImageView preview, importedPhoto;
   TextView photoStatus;
   Bitmap importedBitmap;
+  CropView inlineCrop;
+  LinearLayout cropArea;
+  Spinner cropMode;
+  Bitmap rotatedPhoto;
   Bitmap poster;
   static final int PICK=1, CAMERA=2, BACKGROUND=4;
   Bitmap background;
@@ -92,9 +96,18 @@ public class MainActivity extends Activity {
     LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER);zone.addView(buttons);
     action(buttons,"사진 촬영",true,()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
     action(buttons,"사진 선택",false,()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
-    importedPhoto=new ImageView(this);importedPhoto.setAdjustViewBounds(true);importedPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);importedPhoto.setVisibility(View.GONE);zone.addView(importedPhoto,new LinearLayout.LayoutParams(-1,dp(190)));
     photoStatus=text("사진 없이 직접 입력해도 만들 수 있어요.",13,0xff667d70,false);photo.addView(photoStatus);
-    TextView selectAgain=text("사진을 불러온 뒤 초록색 선택 영역을 조절해 글자를 읽습니다.",12,0xff667d70,false);photo.addView(selectAgain);
+    TextView selectAgain=text("사진 위 초록색 영역을 드래그해 이름과 암호 부분만 선택하세요.",13,0xff667d70,false);photo.addView(selectAgain);
+    cropArea=new LinearLayout(this);cropArea.setOrientation(1);cropArea.setVisibility(View.GONE);photo.addView(cropArea);
+    inlineCrop=new CropView(this,null);
+    LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(380));imageLp.setMargins(0,dp(14),0,dp(10));cropArea.addView(inlineCrop,imageLp);
+    LinearLayout cropButtons=new LinearLayout(this);cropArea.addView(cropButtons);
+    action(cropButtons,"사진 회전",false,()->{if(rotatedPhoto!=null){Matrix m=new Matrix();m.postRotate(90);rotatedPhoto=Bitmap.createBitmap(rotatedPhoto,0,0,rotatedPhoto.getWidth(),rotatedPhoto.getHeight(),m,true);inlineCrop.setBitmap(rotatedPhoto);}});
+    action(cropButtons,"전체 선택",false,()->inlineCrop.selectAll());
+    smallLabel(cropArea,"읽을 내용");
+    cropMode=new Spinner(this);cropMode.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"무선랜명 + 암호","무선랜명만","암호만"}));
+    cropArea.addView(cropMode,new LinearLayout.LayoutParams(-1,dp(54)));
+    addButton(cropArea,"선택 영역 글자 읽기",()->{if(rotatedPhoto!=null)readSelection(inlineCrop.selected(),cropMode.getSelectedItemPosition());});
     LinearLayout details=card(root,"②","이름과 암호 확인");
     details.addView(text("사진 인식 후 대소문자와 숫자 0·영문 O 등을 확인하세요.",13,0xff829087,false));
     smallLabel(details,"무선랜명 (SSID)");ssid=input(details,"예: KT_GiGA_5G_1234","");
@@ -134,26 +147,12 @@ public class MainActivity extends Activity {
       else bmp=(Bitmap)data.getExtras().get("data");
       if(bmp==null){toast("사진을 읽지 못했습니다");return;}
       importedBitmap=bmp;
-      importedPhoto.setImageBitmap(bmp);
-      importedPhoto.setVisibility(View.VISIBLE);
+      rotatedPhoto=bmp;
+      inlineCrop.setBitmap(bmp);
+      cropArea.setVisibility(View.VISIBLE);
       photoStatus.setText("사진 불러오기 완료 · 초록색 영역으로 무선랜명과 암호를 선택하세요.");
-      showCrop(bmp);
+
     }catch(Exception e){toast("사진 오류: "+e.getMessage());}
-  }
-  void showCrop(Bitmap source){
-    final Bitmap[] current={source};
-    final int[] angle={0};
-    LinearLayout layout=new LinearLayout(this);layout.setOrientation(1);layout.setPadding(16,12,16,12);
-    TextView info=new TextView(this);info.setText("초록색 영역을 손가락으로 움직여 글자만 선택하세요. 모서리를 끌어 크기를 조절합니다.");layout.addView(info);
-    CropView crop=new CropView(this,current[0]);layout.addView(crop,new LinearLayout.LayoutParams(-1,(int)(360*getResources().getDisplayMetrics().density)));
-    Spinner target=new Spinner(this);String[] modes={"무선랜명 + 암호 (두 줄)","무선랜명만","암호만"};
-    target.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,modes));layout.addView(target);
-    Button rotate=new Button(this);rotate.setText("사진 90도 회전");layout.addView(rotate);
-    rotate.setOnClickListener(v->{Matrix m=new Matrix();m.postRotate(90);Bitmap old=current[0];current[0]=Bitmap.createBitmap(old,0,0,old.getWidth(),old.getHeight(),m,true);crop.setBitmap(current[0]);});
-    AlertDialog dialog=new AlertDialog.Builder(this).setTitle("문자 추출 영역 선택").setView(layout).setNegativeButton("취소",null).setPositiveButton("선택 영역 글자 읽기",null).create();
-    dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{
-      Bitmap selected=crop.selected();int mode=target.getSelectedItemPosition();dialog.dismiss();readSelection(selected,mode);
-    }));dialog.show();
   }
   void readSelection(Bitmap bmp,int mode){
     TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(InputImage.fromBitmap(bmp,0)).addOnSuccessListener(t->{
@@ -179,7 +178,8 @@ public class MainActivity extends Activity {
   class CropView extends View{
     Bitmap bitmap;Paint paint=new Paint(3);android.graphics.RectF selection=new android.graphics.RectF(.1f,.25f,.9f,.65f);float px,py;boolean resize;
     CropView(Context c,Bitmap b){super(c);bitmap=b;}
-    void setBitmap(Bitmap b){bitmap=b;invalidate();}
+    void setBitmap(Bitmap b){bitmap=b;selection.set(.1f,.25f,.9f,.65f);invalidate();}
+    void selectAll(){selection.set(0,0,1,1);invalidate();}
     @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(Color.DKGRAY);if(bitmap==null)return;
       android.graphics.RectF dest=fit();c.drawBitmap(bitmap,null,dest,paint);
       paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(5);paint.setColor(Color.GREEN);
@@ -188,6 +188,7 @@ public class MainActivity extends Activity {
     }
     android.graphics.RectF fit(){float scale=Math.min(getWidth()/(float)bitmap.getWidth(),getHeight()/(float)bitmap.getHeight());float w=bitmap.getWidth()*scale,h=bitmap.getHeight()*scale;return new android.graphics.RectF((getWidth()-w)/2,(getHeight()-h)/2,(getWidth()+w)/2,(getHeight()+h)/2);}
     @Override public boolean onTouchEvent(android.view.MotionEvent e){
+      if(bitmap==null)return false;
       android.graphics.RectF d=fit();float x=(e.getX()-d.left)/d.width(),y=(e.getY()-d.top)/d.height();
       if(e.getAction()==0){px=x;py=y;resize=Math.abs(x-selection.right)<.13f&&Math.abs(y-selection.bottom)<.13f;return true;}
       if(e.getAction()==1||e.getAction()==2){float dx=x-px,dy=y-py;
