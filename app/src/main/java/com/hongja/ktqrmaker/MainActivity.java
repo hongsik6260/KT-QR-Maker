@@ -46,21 +46,74 @@ public class MainActivity extends Activity {
   EditText field(LinearLayout root,String hint,String val){EditText e=new EditText(this);e.setHint(hint);e.setSingleLine(true);e.setText(val);root.addView(e);return e;}
   void addButton(LinearLayout root,String label,Runnable r){Button b=new Button(this);b.setText(label);root.addView(b);b.setOnClickListener(v->r.run());}
   void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
-  @Override protected void onActivityResult(int req,int result,Intent data){super.onActivityResult(req,result,data);if(result!=RESULT_OK||data==null)return; if(req==3){writeOutput(data.getData());return;}
+  @Override protected void onActivityResult(int req,int result,Intent data){
+    super.onActivityResult(req,result,data);
+    if(result!=RESULT_OK||data==null)return;
+    if(req==3){writeOutput(data.getData());return;}
     try{
-      InputImage img;
-      if(req==PICK){img=InputImage.fromFilePath(this,data.getData());}
-      else {Bitmap bmp=(Bitmap)data.getExtras().get("data");img=InputImage.fromBitmap(bmp,0);}
-      TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(img).addOnSuccessListener(t->{
-        String raw=t.getText();String[] lines=raw.split("\\n");String s="",p="";
-        for(int j=0;j<lines.length;j++){String line=lines[j].trim();String low=line.toLowerCase(Locale.ROOT);
-          if(low.matches(".*(ssid|무선랜명|네트워크 이름|wifi name).*"))s=value(line,j,lines);
-          if(low.matches(".*(password|비밀번호|암호|wifi key|보안키).*"))p=value(line,j,lines);
-        }
-        if(!s.isEmpty())ssid.setText(s);if(!p.isEmpty())pass.setText(p);
-        new AlertDialog.Builder(this).setTitle("인식된 글씨 (확인 후 수정)").setMessage(raw).setPositiveButton("확인",(a,b)->{}).show();
-      }).addOnFailureListener(e->toast("문자 인식 실패: "+e.getMessage()));
-    }catch(Exception e){toast(e.getMessage());}
+      Bitmap bmp;
+      if(req==PICK){try(InputStream in=getContentResolver().openInputStream(data.getData())){bmp=BitmapFactory.decodeStream(in);}}
+      else bmp=(Bitmap)data.getExtras().get("data");
+      if(bmp==null){toast("사진을 읽지 못했습니다");return;}
+      showCrop(bmp);
+    }catch(Exception e){toast("사진 오류: "+e.getMessage());}
+  }
+  void showCrop(Bitmap source){
+    final Bitmap[] current={source};
+    final int[] angle={0};
+    LinearLayout layout=new LinearLayout(this);layout.setOrientation(1);layout.setPadding(16,12,16,12);
+    TextView info=new TextView(this);info.setText("초록색 영역을 손가락으로 움직여 글자만 선택하세요. 모서리를 끌어 크기를 조절합니다.");layout.addView(info);
+    CropView crop=new CropView(this,current[0]);layout.addView(crop,new LinearLayout.LayoutParams(-1,(int)(360*getResources().getDisplayMetrics().density)));
+    Spinner target=new Spinner(this);String[] modes={"무선랜명 + 암호 (두 줄)","무선랜명만","암호만"};
+    target.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,modes));layout.addView(target);
+    Button rotate=new Button(this);rotate.setText("사진 90도 회전");layout.addView(rotate);
+    rotate.setOnClickListener(v->{Matrix m=new Matrix();m.postRotate(90);Bitmap old=current[0];current[0]=Bitmap.createBitmap(old,0,0,old.getWidth(),old.getHeight(),m,true);crop.setBitmap(current[0]);});
+    AlertDialog dialog=new AlertDialog.Builder(this).setTitle("문자 추출 영역 선택").setView(layout).setNegativeButton("취소",null).setPositiveButton("선택 영역 글자 읽기",null).create();
+    dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{
+      Bitmap selected=crop.selected();int mode=target.getSelectedItemPosition();dialog.dismiss();readSelection(selected,mode);
+    }));dialog.show();
+  }
+  void readSelection(Bitmap bmp,int mode){
+    TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(InputImage.fromBitmap(bmp,0)).addOnSuccessListener(t->{
+      ArrayList<String> candidates=new ArrayList<>();
+      for(com.google.mlkit.vision.text.Text.TextBlock block:t.getTextBlocks())
+        for(com.google.mlkit.vision.text.Text.Line line:block.getLines()){String v=line.getText().trim();if(!v.isEmpty())candidates.add(v);}
+      if(candidates.isEmpty()){toast("글자를 찾지 못했습니다. 영역을 다시 선택하세요.");return;}
+      String[] choices=candidates.toArray(new String[0]);
+      if(mode==0){
+        LinearLayout fields=new LinearLayout(this);fields.setOrientation(1);
+        EditText name=new EditText(this);name.setHint("무선랜명");name.setText(choices[0]);fields.addView(name);
+        EditText key=new EditText(this);key.setHint("암호");key.setText(choices.length>1?choices[1]:"");fields.addView(key);
+        TextView all=new TextView(this);all.setText("인식 후보: "+android.text.TextUtils.join(" / ",choices));fields.addView(all);
+        new AlertDialog.Builder(this).setTitle("인식 결과 확인 및 수정").setView(fields).setPositiveButton("적용",(d,w)->{ssid.setText(name.getText());pass.setText(key.getText());}).setNegativeButton("취소",null).show();
+      }else{
+        new AlertDialog.Builder(this).setTitle("인식 후보 선택").setSingleChoiceItems(choices,0,(d,which)->{
+          EditText edit=new EditText(this);edit.setSingleLine(true);edit.setText(choices[which]);
+          d.dismiss();new AlertDialog.Builder(this).setTitle("글자 확인 및 수정").setView(edit).setPositiveButton("적용",(a,w)->{if(mode==1)ssid.setText(edit.getText());else pass.setText(edit.getText());}).setNegativeButton("취소",null).show();
+        }).setNegativeButton("취소",null).show();
+      }
+    }).addOnFailureListener(e->toast("문자 인식 실패: "+e.getMessage()));
+  }
+  class CropView extends View{
+    Bitmap bitmap;Paint paint=new Paint(3);android.graphics.RectF selection=new android.graphics.RectF(.1f,.25f,.9f,.65f);float px,py;boolean resize;
+    CropView(Context c,Bitmap b){super(c);bitmap=b;}
+    void setBitmap(Bitmap b){bitmap=b;invalidate();}
+    @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(Color.DKGRAY);if(bitmap==null)return;
+      android.graphics.RectF dest=fit();c.drawBitmap(bitmap,null,dest,paint);
+      paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(5);paint.setColor(Color.GREEN);
+      c.drawRect(dest.left+selection.left*dest.width(),dest.top+selection.top*dest.height(),dest.left+selection.right*dest.width(),dest.top+selection.bottom*dest.height(),paint);
+      paint.setStyle(Paint.Style.FILL);paint.setColor(Color.WHITE);
+    }
+    android.graphics.RectF fit(){float scale=Math.min(getWidth()/(float)bitmap.getWidth(),getHeight()/(float)bitmap.getHeight());float w=bitmap.getWidth()*scale,h=bitmap.getHeight()*scale;return new android.graphics.RectF((getWidth()-w)/2,(getHeight()-h)/2,(getWidth()+w)/2,(getHeight()+h)/2);}
+    @Override public boolean onTouchEvent(android.view.MotionEvent e){
+      android.graphics.RectF d=fit();float x=(e.getX()-d.left)/d.width(),y=(e.getY()-d.top)/d.height();
+      if(e.getAction()==0){px=x;py=y;resize=Math.abs(x-selection.right)<.13f&&Math.abs(y-selection.bottom)<.13f;return true;}
+      if(e.getAction()==1||e.getAction()==2){float dx=x-px,dy=y-py;
+        if(resize){selection.right=Math.max(selection.left+.08f,Math.min(1,selection.right+dx));selection.bottom=Math.max(selection.top+.05f,Math.min(1,selection.bottom+dy));}
+        else {float l=Math.max(0,Math.min(1-selection.width(),selection.left+dx)),t=Math.max(0,Math.min(1-selection.height(),selection.top+dy));selection.offsetTo(l,t);}
+        px=x;py=y;invalidate();return true;}return true;
+    }
+    Bitmap selected(){int x=Math.max(0,(int)(selection.left*bitmap.getWidth())),y=Math.max(0,(int)(selection.top*bitmap.getHeight()));int w=Math.max(1,Math.min(bitmap.getWidth()-x,(int)(selection.width()*bitmap.getWidth()))),h=Math.max(1,Math.min(bitmap.getHeight()-y,(int)(selection.height()*bitmap.getHeight())));return Bitmap.createBitmap(bitmap,x,y,w,h);}
   }
   String value(String line,int i,String[] lines){int a=line.indexOf(':');if(a<0)a=line.indexOf('：');String v=a>=0?line.substring(a+1).trim():"";if(v.isEmpty()&&i+1<lines.length)v=lines[i+1].trim();return v;}
   String wifi(){return "WIFI:T:WPA;S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";;";}
