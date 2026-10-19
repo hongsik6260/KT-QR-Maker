@@ -257,7 +257,8 @@ public class MainActivity extends Activity {
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
-      Paint.FontMetrics fm=p.getFontMetrics();\n      float centeredBaseline=(1420+1502)/2f-(fm.ascent+fm.descent)/2f;\n      drawFit(c,p,phone.getText().toString(),771,centeredBaseline,493);
+      Paint.FontMetrics fm=p.getFontMetrics();
+      float centeredBaseline=(1420+1502)/2f-(fm.ascent+fm.descent)/2f;\n      drawFit(c,p,phone.getText().toString(),771,centeredBaseline,493);
       p.setTextAlign(Paint.Align.LEFT);
       c.restore();preview.setImageBitmap(poster);toast("KT 광고 이미지 생성 완료");
     }catch(Exception e){toast("생성 오류: "+e.getMessage());}
