@@ -28,6 +28,7 @@ public class MainActivity extends Activity {
   LinearLayout cropArea;
   Spinner cropMode;
   Bitmap rotatedPhoto;
+  ScrollView mainScroll;
   Bitmap poster;
   static final int PICK=1, CAMERA=2, BACKGROUND=4;
   Bitmap background;
@@ -69,7 +70,7 @@ public class MainActivity extends Activity {
   }
   @Override public void onCreate(Bundle b){super.onCreate(b);
     getWindow().setStatusBarColor(0xfff4f6f3);getWindow().setNavigationBarColor(0xfff4f6f3);
-    ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(0xfff4f6f3);
+    ScrollView scroll=new ScrollView(this);mainScroll=scroll;scroll.setFillViewport(true);scroll.setBackgroundColor(0xfff4f6f3);
     LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(22),dp(20),dp(28));
     scroll.addView(root);setContentView(scroll);
     TextView brand=text("KT WiFi QR생성",22,0xff1c4435,true);root.addView(brand);
@@ -100,7 +101,7 @@ public class MainActivity extends Activity {
     TextView selectAgain=text("사진 위 초록색 영역을 드래그해 이름과 암호 부분만 선택하세요.",13,0xff667d70,false);photo.addView(selectAgain);
     cropArea=new LinearLayout(this);cropArea.setOrientation(1);cropArea.setVisibility(View.GONE);photo.addView(cropArea);
     inlineCrop=new CropView(this,null);
-    LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(380));imageLp.setMargins(0,dp(14),0,dp(10));cropArea.addView(inlineCrop,imageLp);
+    LinearLayout.LayoutParams imageLp=new LinearLayout.LayoutParams(-1,dp(480));imageLp.setMargins(0,dp(14),0,dp(10));cropArea.addView(inlineCrop,imageLp);
     LinearLayout cropButtons=new LinearLayout(this);cropArea.addView(cropButtons);
     action(cropButtons,"사진 회전",false,()->{if(rotatedPhoto!=null){Matrix m=new Matrix();m.postRotate(90);rotatedPhoto=Bitmap.createBitmap(rotatedPhoto,0,0,rotatedPhoto.getWidth(),rotatedPhoto.getHeight(),m,true);inlineCrop.setBitmap(rotatedPhoto);}});
     action(cropButtons,"전체 선택",false,()->inlineCrop.selectAll());
@@ -150,7 +151,8 @@ public class MainActivity extends Activity {
       rotatedPhoto=bmp;
       inlineCrop.setBitmap(bmp);
       cropArea.setVisibility(View.VISIBLE);
-      photoStatus.setText("사진 불러오기 완료 · 초록색 영역으로 무선랜명과 암호를 선택하세요.");
+      photoStatus.setText("사진 불러오기 완료 · 아래 사진에서 초록색 영역을 직접 조절하세요.");
+      cropArea.post(()->mainScroll.smoothScrollTo(0,Math.max(0,cropArea.getTop()+((android.view.View)cropArea.getParent()).getTop()-dp(90))));
 
     }catch(Exception e){toast("사진 오류: "+e.getMessage());}
   }
@@ -182,9 +184,12 @@ public class MainActivity extends Activity {
     void selectAll(){selection.set(0,0,1,1);invalidate();}
     @Override protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(Color.DKGRAY);if(bitmap==null)return;
       android.graphics.RectF dest=fit();c.drawBitmap(bitmap,null,dest,paint);
-      paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(5);paint.setColor(Color.GREEN);
+      paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(3));paint.setColor(0xff16d95b);
       c.drawRect(dest.left+selection.left*dest.width(),dest.top+selection.top*dest.height(),dest.left+selection.right*dest.width(),dest.top+selection.bottom*dest.height(),paint);
-      paint.setStyle(Paint.Style.FILL);paint.setColor(Color.WHITE);
+      paint.setStyle(Paint.Style.FILL);paint.setColor(0xff16d95b);
+      float rx=dest.left+selection.right*dest.width(),by=dest.top+selection.bottom*dest.height();
+      c.drawCircle(rx,by,dp(9),paint);
+      paint.setColor(Color.WHITE);
     }
     android.graphics.RectF fit(){float scale=Math.min(getWidth()/(float)bitmap.getWidth(),getHeight()/(float)bitmap.getHeight());float w=bitmap.getWidth()*scale,h=bitmap.getHeight()*scale;return new android.graphics.RectF((getWidth()-w)/2,(getHeight()-h)/2,(getWidth()+w)/2,(getHeight()+h)/2);}
     @Override public boolean onTouchEvent(android.view.MotionEvent e){
