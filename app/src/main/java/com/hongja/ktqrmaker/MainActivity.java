@@ -148,7 +148,8 @@ public class MainActivity extends Activity {
     }
     preview.setImageBitmap(poster);toast("미리보기 생성 완료");
   }catch(Exception e){toast("생성 오류: "+e.getMessage());}}
-  void drawFit(Canvas c,Paint p,String text,float x,float y,float maxWidth){float initial=p.getTextSize();while(p.measureText(text)>maxWidth && p.getTextSize()>12){p.setTextSize(p.getTextSize()*.92f);}c.drawText(text,x,y,p);p.setTextSize(initial);}\n  void save(boolean pdf){try{render();if(poster==null)return;String name="KT_QR_"+System.currentTimeMillis()+(pdf?".pdf":".png");
+  void drawFit(Canvas c,Paint p,String text,float x,float y,float maxWidth){float initial=p.getTextSize();while(p.measureText(text)>maxWidth && p.getTextSize()>12){p.setTextSize(p.getTextSize()*.92f);}c.drawText(text,x,y,p);p.setTextSize(initial);}
+  void save(boolean pdf){try{render();if(poster==null)return;String name="KT_QR_"+System.currentTimeMillis()+(pdf?".pdf":".png");
     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType(pdf?"application/pdf":"image/png");intent.putExtra(Intent.EXTRA_TITLE,name);
     pendingPdf=pdf;startActivityForResult(intent,3);
   }catch(Exception e){toast(e.getMessage());}}
