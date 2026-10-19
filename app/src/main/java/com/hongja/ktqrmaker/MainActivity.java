@@ -207,7 +207,11 @@ public class MainActivity extends Activity {
       // Preserve red labels and outlines; edit only the white value fields.
       p.setColor(Color.WHITE);
       c.drawRect(530,1230,778,1272,p);
-      c.drawRect(535,1303,766,1328,p);
+      // Clear only the interior of the password value box, not its red outline.
+      c.drawRect(542,1305,754,1330,p);
+      // Reinstate the top red rule, which is interrupted in the background asset.
+      p.setColor(0xfff01926);
+      c.drawRect(500,1293,775,1297,p);
       p.setColor(0xff111111);
       p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
       p.setTextAlign(Paint.Align.CENTER);
