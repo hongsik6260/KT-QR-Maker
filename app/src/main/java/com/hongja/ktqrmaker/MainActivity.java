@@ -171,16 +171,20 @@ public class MainActivity extends Activity {
       TextView header=text("인식 결과 후보 · 눌러서 적용하세요",15,0xff176c53,true);
       ocrCandidates.addView(header);
       if(mode==0){
-        for(int i=0;i<Math.min(choices.length,8);i++){
-          final int index=i;
-          String first=choices[index],second=index+1<choices.length?choices[index+1]:"";
-          Button candidate=new Button(this);
-          candidate.setAllCaps(false);
-          candidate.setText("무선랜명: "+first+"\n암호: "+second);
-          candidate.setTextColor(0xff193d31);
-          candidate.setBackground(shape(0xffe9f3ed,12));
-          ocrCandidates.addView(candidate,new LinearLayout.LayoutParams(-1,dp(76)));
-          candidate.setOnClickListener(v->{ssid.setText(first);pass.setText(second);toast("무선랜명과 암호 적용 완료");});
+        TextView hint=text("각 인식 결과에서 무선랜명 또는 암호를 따로 선택하세요.",13,0xff667d70,false);
+        ocrCandidates.addView(hint);
+        for(String choice:choices){
+          LinearLayout lineRow=new LinearLayout(this);
+          lineRow.setOrientation(LinearLayout.VERTICAL);
+          TextView lineText=text(choice,16,0xff193d31,true);
+          lineRow.addView(lineText);
+          LinearLayout actions=new LinearLayout(this);
+          lineRow.addView(actions);
+          action(actions,"무선랜명 적용",false,()->ssid.setText(choice));
+          action(actions,"암호 적용",false,()->pass.setText(choice));
+          LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);
+          lp.setMargins(0,dp(8),0,dp(8));
+          ocrCandidates.addView(lineRow,lp);
         }
       }else{
         for(String choice:choices){
@@ -223,7 +227,7 @@ public class MainActivity extends Activity {
   String value(String line,int i,String[] lines){int a=line.indexOf(':');if(a<0)a=line.indexOf('：');String v=a>=0?line.substring(a+1).trim():"";if(v.isEmpty()&&i+1<lines.length)v=lines[i+1].trim();return v;}
   String wifi(){String type=security.getSelectedItemPosition()==1?"nopass":security.getSelectedItemPosition()==2?"WEP":"WPA";return "WIFI:T:"+type+";S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";H:"+(hiddenNetwork.isChecked()?"true":"false")+";;";}
   String esc(String v){String slash=Character.toString((char)92);return v.replace(slash,slash+slash).replace(";",slash+";").replace(":",slash+":").replace(",",slash+",");}
-  Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,0,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
+  Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,1,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
   void render(){
     poster=null;
     if(background==null){toast("KT 광고 원본 이미지가 APK에 없습니다. 원본 포함 빌드가 필요합니다.");return;}
@@ -237,7 +241,7 @@ public class MainActivity extends Activity {
       // Fill the inside of the original red QR frame without covering its border.
       p.setColor(Color.WHITE);c.drawRect(389,912,696,1205,p);
       Bitmap qrImage=qr(300);
-      c.drawBitmap(qrImage,null,new android.graphics.Rect(393,915,692,1202),p);
+      c.drawBitmap(qrImage,null,new android.graphics.Rect(395,918,690,1199),p);
       // Preserve red labels and outlines; edit only the white value fields.
       p.setColor(Color.WHITE);
       c.drawRect(530,1230,778,1272,p);
@@ -253,7 +257,7 @@ public class MainActivity extends Activity {
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
-      drawFit(c,p,phone.getText().toString(),771,1480,493);
+      Paint.FontMetrics fm=p.getFontMetrics();\n      float centeredBaseline=(1420+1502)/2f-(fm.ascent+fm.descent)/2f;\n      drawFit(c,p,phone.getText().toString(),771,centeredBaseline,493);
       p.setTextAlign(Paint.Align.LEFT);
       c.restore();preview.setImageBitmap(poster);toast("KT 광고 이미지 생성 완료");
     }catch(Exception e){toast("생성 오류: "+e.getMessage());}
