@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
     LinearLayout brandRow=new LinearLayout(this);brandRow.setGravity(Gravity.CENTER_VERTICAL);root.addView(brandRow);
     ImageView logo=new ImageView(this);try(InputStream logoStream=getAssets().open("kt_service_logo.png")){logo.setImageBitmap(BitmapFactory.decodeStream(logoStream));}catch(Exception ignored){logo.setImageResource(com.hongja.ktqrmaker.R.drawable.kt_app_icon);}
     LinearLayout.LayoutParams logoLp=new LinearLayout.LayoutParams(dp(177),dp(38));logoLp.setMargins(0,0,dp(12),0);brandRow.addView(logo,logoLp);
-    TextView brand=text("KT WiFi QR생성",22,0xff1c4435,true);brandRow.addView(brand);
+    TextView brand=text("KT WiFi QR생성",22,0xff1c4435,true);root.addView(brand);
     TextView affiliation=text("KT서비스남부  |  충청본부 · 대전지점 · 대전지사\\nCS4팀(금산)  김홍식",12,0xff667d70,false);
     affiliation.setText(affiliation.getText().toString().replace("\\n","\n"));
     LinearLayout.LayoutParams affiliationLp=new LinearLayout.LayoutParams(-1,-2);affiliationLp.setMargins(0,dp(8),0,0);root.addView(affiliation,affiliationLp);
