@@ -213,7 +213,8 @@ public class MainActivity extends Activity {
       android.graphics.RectF d=fit();float x=(e.getX()-d.left)/d.width(),y=(e.getY()-d.top)/d.height();
       if(e.getAction()==0){getParent().requestDisallowInterceptTouchEvent(true);px=x;py=y;startX=x;startY=y;resize=Math.abs(x-selection.right)<.10f&&Math.abs(y-selection.bottom)<.10f;drawing=!resize&&!selection.contains(x,y);return true;}
       if(e.getAction()==1||e.getAction()==2){float dx=x-px,dy=y-py;
-        if(drawing){selection.set(Math.max(0,Math.min(startX,x)),Math.max(0,Math.min(startY,y)),Math.min(1,Math.max(startX,x)),Math.min(1,Math.max(startY,y)));if(selection.width()<.02f)selection.right=Math.min(1,selection.left+.02f);if(selection.height()<.02f)selection.bottom=Math.min(1,selection.top+.02f);}\n        else if(resize){selection.right=Math.max(selection.left+.08f,Math.min(1,selection.right+dx));selection.bottom=Math.max(selection.top+.05f,Math.min(1,selection.bottom+dy));}
+        if(drawing){selection.set(Math.max(0,Math.min(startX,x)),Math.max(0,Math.min(startY,y)),Math.min(1,Math.max(startX,x)),Math.min(1,Math.max(startY,y)));if(selection.width()<.02f)selection.right=Math.min(1,selection.left+.02f);if(selection.height()<.02f)selection.bottom=Math.min(1,selection.top+.02f);}
+        else if(resize){selection.right=Math.max(selection.left+.08f,Math.min(1,selection.right+dx));selection.bottom=Math.max(selection.top+.05f,Math.min(1,selection.bottom+dy));}
         else {float l=Math.max(0,Math.min(1-selection.width(),selection.left+dx)),t=Math.max(0,Math.min(1-selection.height(),selection.top+dy));selection.offsetTo(l,t);}
         px=x;py=y;invalidate();return true;}return true;
     }
