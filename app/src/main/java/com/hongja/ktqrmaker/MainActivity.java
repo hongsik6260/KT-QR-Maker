@@ -207,18 +207,15 @@ public class MainActivity extends Activity {
       // Preserve red labels and outlines; edit only the white value fields.
       p.setColor(Color.WHITE);
       c.drawRect(530,1230,778,1272,p);
-      // Clear only the interior of the password value box, not its red outline.
-      c.drawRect(542,1305,754,1330,p);
-      // Reinstate the top red rule, which is interrupted in the background asset.
-      p.setColor(0xfff01926);
-      c.drawRect(500,1293,775,1297,p);
+      // Keep the password field white without painting over its red border.
+      c.drawRect(535,1304,755,1341,p);
       p.setColor(0xff111111);
       p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
       p.setTextAlign(Paint.Align.CENTER);
       p.setTextSize(34);
       drawFit(c,p,ssid.getText().toString(),653,1263,234);
       // Center password text vertically inside the white row, clear of its red bottom border.
-      drawFit(c,p,pass.getText().toString(),653,1326,234);
+      drawFit(c,p,pass.getText().toString(),653,1340,224);
       // Keep the original yellow phone icon; repaint only the number area.
       p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
       p.setColor(0xffffff1c);p.setTextSize(63);
