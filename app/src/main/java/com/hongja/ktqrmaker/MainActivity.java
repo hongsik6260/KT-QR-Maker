@@ -129,7 +129,7 @@ public class MainActivity extends Activity {
   String value(String line,int i,String[] lines){int a=line.indexOf(':');if(a<0)a=line.indexOf('：');String v=a>=0?line.substring(a+1).trim():"";if(v.isEmpty()&&i+1<lines.length)v=lines[i+1].trim();return v;}
   String wifi(){return "WIFI:T:WPA;S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";;";}
   String esc(String v){String slash=Character.toString((char)92);return v.replace(slash,slash+slash).replace(";",slash+";").replace(":",slash+":").replace(",",slash+",");}
-  Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,1,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.H));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
+  Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,0,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
   void render(){
     poster=null;
     if(background==null){toast("KT 광고 원본 이미지가 APK에 없습니다. 원본 포함 빌드가 필요합니다.");return;}
@@ -140,15 +140,25 @@ public class MainActivity extends Activity {
       Canvas c=new Canvas(poster);Paint p=new Paint(3);
       c.drawBitmap(background,null,new android.graphics.Rect(0,0,w,h),p);
       c.save();c.scale(w/1085f,h/1536f);
-      p.setColor(Color.WHITE);c.drawRect(396,924,685,1198,p);
-      Bitmap qrImage=qr(265);c.drawBitmap(qrImage,408,928,p);
-      c.drawRect(528,1219,820,1274,p);c.drawRect(528,1280,820,1336,p);
-      p.setColor(0xff111111);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextSize(37);
-      drawFit(c,p,ssid.getText().toString(),535,1256,280);
-      drawFit(c,p,pass.getText().toString(),535,1318,280);
-      p.setColor(0xff0a0a0a);c.drawRoundRect(493,1418,1043,1506,20,20,p);
-      p.setColor(0xffffff1c);p.setTextSize(65);
-      drawFit(c,p,phone.getText().toString(),515,1482,515);
+      // Fill the inside of the original red QR frame without covering its border.
+      p.setColor(Color.WHITE);c.drawRect(389,912,696,1205,p);
+      Bitmap qrImage=qr(300);
+      c.drawBitmap(qrImage,null,new android.graphics.Rect(393,915,692,1202),p);
+      // Preserve red labels and outlines; edit only the white value fields.
+      p.setColor(Color.WHITE);
+      c.drawRect(530,1224,811,1273,p);
+      c.drawRect(530,1284,811,1333,p);
+      p.setColor(0xff111111);
+      p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));
+      p.setTextAlign(Paint.Align.CENTER);
+      p.setTextSize(34);
+      drawFit(c,p,ssid.getText().toString(),670,1260,263);
+      drawFit(c,p,pass.getText().toString(),670,1320,263);
+      // Keep the original yellow phone icon; repaint only the number area.
+      p.setColor(0xff080808);c.drawRect(513,1420,1030,1502,p);
+      p.setColor(0xffffff1c);p.setTextSize(63);
+      drawFit(c,p,phone.getText().toString(),771,1480,493);
+      p.setTextAlign(Paint.Align.LEFT);
       c.restore();preview.setImageBitmap(poster);toast("KT 광고 이미지 생성 완료");
     }catch(Exception e){toast("생성 오류: "+e.getMessage());}
   }
