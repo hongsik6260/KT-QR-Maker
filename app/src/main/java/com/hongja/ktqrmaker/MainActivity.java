@@ -19,7 +19,8 @@ import java.util.*;
 
 public class MainActivity extends Activity {
   EditText ssid, pass, phone;
-  Spinner paper;
+  Spinner paper, security;
+  CheckBox hiddenNetwork;
   ImageView preview;
   Bitmap poster;
   static final int PICK=1, CAMERA=2, BACKGROUND=4;
@@ -28,23 +29,82 @@ public class MainActivity extends Activity {
   int[] widths={2480,1748,1240,874};
   int[] heights={3508,2480,1748,1240};
   String[] labels={"A4","A5","A6","A7"};
+  int dp(float n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
+  android.graphics.drawable.GradientDrawable shape(int color,int radius){
+    android.graphics.drawable.GradientDrawable d=new android.graphics.drawable.GradientDrawable();
+    d.setColor(color);d.setCornerRadius(dp(radius));return d;
+  }
+  TextView text(String value,int size,int color,boolean bold){
+    TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);
+    if(bold)t.setTypeface(null,Typeface.BOLD);return t;
+  }
+  LinearLayout card(LinearLayout parent,String number,String heading){
+    LinearLayout card=new LinearLayout(this);card.setOrientation(1);card.setPadding(dp(20),dp(22),dp(20),dp(22));
+    card.setBackground(shape(Color.WHITE,22));
+    LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(-1,-2);cp.setMargins(0,0,0,dp(20));parent.addView(card,cp);
+    TextView h=text(number+"   "+heading,19,0xff223d32,true);
+    card.addView(h);return card;
+  }
+  void smallLabel(LinearLayout parent,String label){
+    TextView t=text(label,14,0xff283e35,true);
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.setMargins(0,dp(18),0,dp(8));parent.addView(t,lp);
+  }
+  EditText input(LinearLayout parent,String placeholder,String initial){
+    EditText e=new EditText(this);e.setText(initial);e.setHint(placeholder);e.setSingleLine(true);
+    e.setTextSize(16);e.setPadding(dp(16),0,dp(12),0);
+    android.graphics.drawable.GradientDrawable d=shape(0xfffbfbf9,12);d.setStroke(dp(1),0xffdeded8);e.setBackground(d);
+    parent.addView(e,new LinearLayout.LayoutParams(-1,dp(58)));return e;
+  }
+  void action(LinearLayout parent,String title,boolean primary,Runnable fn){
+    Button b=new Button(this);b.setAllCaps(false);b.setText(title);b.setTextSize(15);
+    b.setTextColor(primary?Color.WHITE:0xff263d33);b.setBackground(shape(primary?0xff176c53:Color.WHITE,12));
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(52),1);lp.setMargins(dp(4),0,dp(4),0);
+    parent.addView(b,lp);b.setOnClickListener(v->fn.run());
+  }
   @Override public void onCreate(Bundle b){super.onCreate(b);
-    LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(20,20,20,20);
-    ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
-    TextView title=new TextView(this);title.setText("KT QR 홍보물 제작기");title.setTextSize(24);title.setTextColor(Color.RED);root.addView(title);
+    getWindow().setStatusBarColor(0xfff4f6f3);getWindow().setNavigationBarColor(0xfff4f6f3);
+    ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(0xfff4f6f3);
+    LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(22),dp(20),dp(28));
+    scroll.addView(root);setContentView(scroll);
+    TextView brand=text("▦   KT WiFi QR생성",22,0xff1c4435,true);root.addView(brand);
+    TextView sub=text("현장에서 간편하게 만드는 연결 안내    ·    광고 없음",12,0xff7b8981,false);root.addView(sub);
+    TextView kicker=text("W I - F I   C A R D   M A K E R",12,0xff197359,true);
+    LinearLayout.LayoutParams kl=new LinearLayout.LayoutParams(-1,-2);kl.setMargins(0,dp(52),0,dp(18));root.addView(kicker,kl);
+    TextView hero=text("사진 한 장으로,\\n와이파이 연결을 간편하게.",29,0xff1e382e,true);
+    hero.setText(hero.getText().toString().replace("\\n","\n"));root.addView(hero);
+    TextView intro=text("공유기 라벨을 촬영하고 이름과 암호를 확인하세요.\\nQR코드를 스캔하면 와이파이에 연결할 수 있습니다.",14,0xff79877f,false);
+    intro.setText(intro.getText().toString().replace("\\n","\n"));
+    LinearLayout.LayoutParams il=new LinearLayout.LayoutParams(-1,-2);il.setMargins(0,dp(20),0,dp(40));root.addView(intro,il);
     try(InputStream in=getAssets().open("kt_background.png")){background=BitmapFactory.decodeStream(in);}catch(Exception ignored){}
-
-    addButton(root,"📷 카메라 촬영",()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
-    addButton(root,"🖼 사진에서 문자 추출",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
-    ssid=field(root,"무선랜명 (SSID)","");
-    pass=field(root,"무선랜 암호","");
-    phone=field(root,"상담 연락처","010-7224-7624");
-    paper=new Spinner(this);paper.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,labels));root.addView(paper);
-    addButton(root,"🎨 QR 홍보물 제작 / 미리보기",()->render());
-    addButton(root,"⬇ PNG 고해상도 저장",()->save(false));
-    addButton(root,"⬇ PDF 저장",()->save(true));
-    preview=new ImageView(this);preview.setAdjustViewBounds(true);root.addView(preview);
-    TextView notice=new TextView(this);notice.setText("문자 인식 결과를 꼭 확인하세요. QR은 입력한 와이파이 정보로 생성됩니다. 사진은 서버로 전송하지 않습니다.");root.addView(notice);
+    LinearLayout photo=card(root,"①","공유기 사진 불러오기");
+    LinearLayout zone=new LinearLayout(this);zone.setOrientation(1);zone.setGravity(Gravity.CENTER);zone.setPadding(dp(10),dp(28),dp(10),dp(28));
+    android.graphics.drawable.GradientDrawable zd=shape(0xfff8faf8,18);zd.setStroke(dp(2),0xffcbd9d0,dp(4),dp(3));zone.setBackground(zd);
+    LinearLayout.LayoutParams zl=new LinearLayout.LayoutParams(-1,-2);zl.setMargins(0,dp(24),0,dp(16));photo.addView(zone,zl);
+    TextView glyph=text("▧",38,0xff176c53,true);glyph.setGravity(Gravity.CENTER);zone.addView(glyph);
+    TextView guide=text("무선랜명과 암호가 보이도록 촬영하세요",15,0xff253f34,true);guide.setGravity(Gravity.CENTER);zone.addView(guide);
+    TextView privacy=text("사진은 서버로 전송하지 않고 기기에서 읽습니다.",12,0xff8a958e,false);privacy.setGravity(Gravity.CENTER);
+    LinearLayout.LayoutParams pl=new LinearLayout.LayoutParams(-1,-2);pl.setMargins(0,dp(12),0,dp(20));zone.addView(privacy,pl);
+    LinearLayout buttons=new LinearLayout(this);buttons.setGravity(Gravity.CENTER);zone.addView(buttons);
+    action(buttons,"사진 촬영",true,()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
+    action(buttons,"사진 선택",false,()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
+    photo.addView(text("사진 없이 직접 입력해도 만들 수 있어요.",13,0xff667d70,false));
+    LinearLayout details=card(root,"②","이름과 암호 확인");
+    details.addView(text("사진 인식 후 대소문자와 숫자 0·영문 O 등을 확인하세요.",13,0xff829087,false));
+    smallLabel(details,"무선랜명 (SSID)");ssid=input(details,"예: KT_GiGA_5G_1234","");
+    smallLabel(details,"암호");pass=input(details,"와이파이 암호 입력","");
+    smallLabel(details,"보안 방식");
+    LinearLayout options=new LinearLayout(this);options.setGravity(Gravity.CENTER_VERTICAL);details.addView(options);
+    security=new Spinner(this);security.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"WPA / WPA2 / WPA3","개방형 (암호 없음)","WEP"}));
+    options.addView(security,new LinearLayout.LayoutParams(0,dp(52),1));
+    hiddenNetwork=new CheckBox(this);hiddenNetwork.setText("숨김 네트워크");hiddenNetwork.setTextSize(12);options.addView(hiddenNetwork);
+    LinearLayout output=card(root,"③","KT 홍보물 만들기");
+    smallLabel(output,"가입 및 상담 문의");phone=input(output,"상담 전화번호","010-7224-7624");
+    smallLabel(output,"용지 크기");paper=new Spinner(this);paper.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,labels));output.addView(paper);
+    addButton(output,"🎨 QR 홍보물 제작 / 미리보기",()->render());
+    addButton(output,"⬇ PNG 고해상도 저장",()->save(false));
+    addButton(output,"⬇ PDF 저장",()->save(true));
+    preview=new ImageView(this);preview.setAdjustViewBounds(true);output.addView(preview);
+    output.addView(text("QR코드와 추출한 정보가 KT 광고 원본 배경에 자동으로 들어갑니다.",12,0xff718278,false));
   }
   EditText field(LinearLayout root,String hint,String val){EditText e=new EditText(this);e.setHint(hint);e.setSingleLine(true);e.setText(val);root.addView(e);return e;}
   void addButton(LinearLayout root,String label,Runnable r){
@@ -127,7 +187,7 @@ public class MainActivity extends Activity {
     Bitmap selected(){int x=Math.max(0,(int)(selection.left*bitmap.getWidth())),y=Math.max(0,(int)(selection.top*bitmap.getHeight()));int w=Math.max(1,Math.min(bitmap.getWidth()-x,(int)(selection.width()*bitmap.getWidth()))),h=Math.max(1,Math.min(bitmap.getHeight()-y,(int)(selection.height()*bitmap.getHeight())));return Bitmap.createBitmap(bitmap,x,y,w,h);}
   }
   String value(String line,int i,String[] lines){int a=line.indexOf(':');if(a<0)a=line.indexOf('：');String v=a>=0?line.substring(a+1).trim():"";if(v.isEmpty()&&i+1<lines.length)v=lines[i+1].trim();return v;}
-  String wifi(){return "WIFI:T:WPA;S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";;";}
+  String wifi(){String type=security.getSelectedItemPosition()==1?"nopass":security.getSelectedItemPosition()==2?"WEP":"WPA";return "WIFI:T:"+type+";S:"+esc(ssid.getText().toString())+";P:"+esc(pass.getText().toString())+";H:"+(hiddenNetwork.isChecked()?"true":"false")+";;";}
   String esc(String v){String slash=Character.toString((char)92);return v.replace(slash,slash+slash).replace(";",slash+";").replace(":",slash+":").replace(",",slash+",");}
   Bitmap qr(int size)throws Exception{BitMatrix bits=new MultiFormatWriter().encode(wifi(),BarcodeFormat.QR_CODE,size,size,Map.of(EncodeHintType.MARGIN,0,EncodeHintType.ERROR_CORRECTION,com.google.zxing.qrcode.decoder.ErrorCorrectionLevel.M));Bitmap b=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888);for(int y=0;y<size;y++)for(int x=0;x<size;x++)b.setPixel(x,y,bits.get(x,y)?Color.BLACK:Color.WHITE);return b;}
   void render(){
