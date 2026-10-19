@@ -3,7 +3,7 @@ on:
   push:
     branches: [kt-qr-poster-v1]
     paths:
-      - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v6.zip'
+      - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'
       - '.github/workflows/build-kt-wifi-162.yml'
   workflow_dispatch:
 jobs:
@@ -21,7 +21,25 @@ jobs:
       - name: Unpack project
         run: |
           mkdir -p wifi-project
-          unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v6.zip -d wifi-project
+          unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
+      - name: Apply v6 layout correction
+        working-directory: wifi-project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/assets/poster.js')
+          s=p.read_text()
+          fixes={
+            "w*.267":"w*.255",
+            "left=w*.511-real/2,top=h*.458-real/2":"left=w*.514-real/2,top=h*.686-real/2",
+            "w*.395,h*.812,w*.37":"w*.485,h*.813,w*.31",
+            "w*.395,h*.873,w*.37":"w*.485,h*.868,w*.31"
+          }
+          for before,after in fixes.items():
+              if before not in s: raise RuntimeError('Expected v5 layout not found: '+before)
+              s=s.replace(before,after)
+          p.write_text(s)
+          PY
       - name: Build APK
         working-directory: wifi-project
         run: gradle :app:assembleDebug --no-daemon
