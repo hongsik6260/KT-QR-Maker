@@ -223,14 +223,60 @@ public class MainActivity extends Activity {
     }catch(Exception e){toast("생성 오류: "+e.getMessage());}
   }
   void drawFit(Canvas c,Paint p,String text,float x,float y,float maxWidth){float initial=p.getTextSize();while(p.measureText(text)>maxWidth && p.getTextSize()>12){p.setTextSize(p.getTextSize()*.92f);}c.drawText(text,x,y,p);p.setTextSize(initial);}
-  void save(boolean pdf){try{render();if(poster==null)return;String name="KT_QR_"+System.currentTimeMillis()+(pdf?".pdf":".png");
-    Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType(pdf?"application/pdf":"image/png");intent.putExtra(Intent.EXTRA_TITLE,name);
-    pendingPdf=pdf;startActivityForResult(intent,3);
-  }catch(Exception e){toast(e.getMessage());}}
+  void save(boolean pdf){
+    try{
+      render();if(poster==null)return;
+      String name="KT_QR_"+System.currentTimeMillis()+(pdf?".pdf":".png");
+      if(android.os.Build.VERSION.SDK_INT>=29){
+        android.content.ContentValues values=new android.content.ContentValues();
+        values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME,name);
+        values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE,pdf?"application/pdf":"image/png");
+        values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH,"DCIM/Camera/");
+        values.put(android.provider.MediaStore.MediaColumns.IS_PENDING,1);
+        Uri collection=pdf?android.provider.MediaStore.Files.getContentUri("external_primary"):
+          android.provider.MediaStore.Images.Media.getContentUri("external_primary");
+        Uri uri=null;
+        try{
+          uri=getContentResolver().insert(collection,values);
+          if(uri==null)throw new Exception("파일을 생성할 수 없습니다");
+          writeOutput(uri,pdf);
+          android.content.ContentValues done=new android.content.ContentValues();
+          done.put(android.provider.MediaStore.MediaColumns.IS_PENDING,0);
+          getContentResolver().update(uri,done,null,null);
+          toast("저장 완료: 내 파일 > 내장 저장공간 > DCIM > Camera");
+          return;
+        }catch(Exception e){
+          if(uri!=null)getContentResolver().delete(uri,null,null);
+          // Some Android versions reject PDF files inside DCIM.
+          if(!pdf)throw e;
+        }
+      }
+      Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+      intent.addCategory(Intent.CATEGORY_OPENABLE);
+      intent.setType(pdf?"application/pdf":"image/png");
+      intent.putExtra(Intent.EXTRA_TITLE,name);
+      pendingPdf=pdf;startActivityForResult(intent,3);
+      if(pdf)toast("이 기기에서는 PDF의 카메라 폴더 자동 저장이 제한되어 위치 선택이 필요합니다");
+    }catch(Exception e){toast("저장 실패: "+e.getMessage());}
+  }
   boolean pendingPdf;
+  void writeOutput(Uri uri){try{writeOutput(uri,pendingPdf);toast("저장 완료");}catch(Exception e){toast("저장 실패: "+e.getMessage());}}
+  void writeOutput(Uri uri,boolean pdf)throws Exception{
+    try(OutputStream out=getContentResolver().openOutputStream(uri)){
+      if(out==null)throw new Exception("저장 위치를 열 수 없습니다");
+      if(pdf){
+        PdfDocument doc=new PdfDocument();
+        try{
+          int i=paper.getSelectedItemPosition();int[] pw={595,420,298,210},ph={842,595,420,298};
+          PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pw[i],ph[i],1).create();
+          PdfDocument.Page page=doc.startPage(info);
+          page.getCanvas().drawBitmap(poster,null,new android.graphics.Rect(0,0,pw[i],ph[i]),new Paint(3));
+          doc.finishPage(page);doc.writeTo(out);
+        }finally{doc.close();}
+      }else if(!poster.compress(Bitmap.CompressFormat.PNG,100,out)){
+        throw new Exception("PNG 파일 기록 실패");
+      }
+    }
+  }
 
-  void writeOutput(Uri uri){try(OutputStream out=getContentResolver().openOutputStream(uri)){
-    if(pendingPdf){PdfDocument doc=new PdfDocument();int i=paper.getSelectedItemPosition();int[] pw={595,420,298,210},ph={842,595,420,298};PdfDocument.PageInfo info=new PdfDocument.PageInfo.Builder(pw[i],ph[i],1).create();PdfDocument.Page page=doc.startPage(info);page.getCanvas().drawBitmap(poster,null,new android.graphics.Rect(0,0,pw[i],ph[i]),new Paint(3));doc.finishPage(page);doc.writeTo(out);doc.close();}
-    else poster.compress(Bitmap.CompressFormat.PNG,100,out);toast("저장 완료");
-  }catch(Exception e){toast("저장 실패: "+e.getMessage());}}
 }
