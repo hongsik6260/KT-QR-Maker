@@ -32,22 +32,29 @@ public class MainActivity extends Activity {
     LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(20,20,20,20);
     ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
     TextView title=new TextView(this);title.setText("KT QR 홍보물 제작기");title.setTextSize(24);title.setTextColor(Color.RED);root.addView(title);
-    try{background=BitmapFactory.decodeFile(new File(getFilesDir(),"kt_background.png").getAbsolutePath());}catch(Exception ignored){}
-    addButton(root,"홍보 배경 이미지 등록 (최초 1회)",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,BACKGROUND);});
-    addButton(root,"사진 촬영",()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
-    addButton(root,"이미지 첨부 / 문자 추출",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
+    try(InputStream in=getAssets().open("kt_background.png")){background=BitmapFactory.decodeStream(in);}catch(Exception ignored){}
+
+    addButton(root,"📷 카메라 촬영",()->{try{Intent i=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAMERA);}catch(Exception e){toast("카메라를 열 수 없습니다");}});
+    addButton(root,"🖼 사진에서 문자 추출",()->{Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("image/*");startActivityForResult(i,PICK);});
     ssid=field(root,"무선랜명 (SSID)","");
     pass=field(root,"무선랜 암호","");
     phone=field(root,"상담 연락처","010-7224-7624");
     paper=new Spinner(this);paper.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,labels));root.addView(paper);
-    addButton(root,"QR 홍보물 미리보기",()->render());
-    addButton(root,"PNG 고해상도 저장",()->save(false));
-    addButton(root,"PDF 저장",()->save(true));
+    addButton(root,"🎨 QR 홍보물 제작 / 미리보기",()->render());
+    addButton(root,"⬇ PNG 고해상도 저장",()->save(false));
+    addButton(root,"⬇ PDF 저장",()->save(true));
     preview=new ImageView(this);preview.setAdjustViewBounds(true);root.addView(preview);
     TextView notice=new TextView(this);notice.setText("문자 인식 결과를 꼭 확인하세요. QR은 입력한 와이파이 정보로 생성됩니다. 사진은 서버로 전송하지 않습니다.");root.addView(notice);
   }
   EditText field(LinearLayout root,String hint,String val){EditText e=new EditText(this);e.setHint(hint);e.setSingleLine(true);e.setText(val);root.addView(e);return e;}
-  void addButton(LinearLayout root,String label,Runnable r){Button b=new Button(this);b.setText(label);root.addView(b);b.setOnClickListener(v->r.run());}
+  void addButton(LinearLayout root,String label,Runnable r){
+    Button b=new Button(this);b.setText(label);b.setTextColor(Color.WHITE);b.setTextSize(17);b.setAllCaps(false);
+    int[] colors=label.contains("문자")?new int[]{0xff299bff,0xff0873ef}:label.contains("제작")?new int[]{0xfffd293d,0xffe00019}:label.contains("PDF")?new int[]{0xff197df5,0xff0661d8}:new int[]{0xff9b51f8,0xff6328e5};
+    android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,colors);
+    bg.setCornerRadius(22);b.setBackground(bg);
+    LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,(int)(60*getResources().getDisplayMetrics().density));lp.setMargins(0,9,0,9);
+    root.addView(b,lp);b.setOnClickListener(v->r.run());
+  }
   void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
   @Override protected void onActivityResult(int req,int result,Intent data){
     super.onActivityResult(req,result,data);
