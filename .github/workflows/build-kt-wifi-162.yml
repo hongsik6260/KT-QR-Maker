@@ -22,30 +22,13 @@ jobs:
         run: |
           mkdir -p wifi-project
           unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
-      - name: Apply v9 QR and OCR fixes
-        working-directory: wifi-project
+      - name: Apply v10 QR, phone and OCR corrections
+        run: python3 .github/scripts/patch_v10.py wifi-project
+      - name: Validate JavaScript and patch outputs
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('app/src/main/assets/poster.js')
-          s=p.read_text()
-          for a,b in [('w*.267','w*.311'),('left=w*.511-real/2,top=h*.458-real/2','left=w*.514-real/2,top=h*.686-real/2'),('w*.395,h*.812,w*.37','w*.485,h*.813,w*.31'),('w*.395,h*.873,w*.37','w*.485,h*.868,w*.31'),('w*.69,h*.949,w*.53','w*.700,h*.950,w*.52')]:
-              if a not in s: raise RuntimeError('Poster patch target missing: '+a)
-              s=s.replace(a,b)
-          p.write_text(s)
-          p=Path('app/src/main/assets/app.js')
-          s=p.read_text()
-          anchor="if(!password&&ssid){const idx="
-          extra="if(!password){for(let i=0;i<lines.length;i++){const m=lines[i].match(/(?:암\\s*호\\s*키?|비밀\\s*번호|password|WLAN\\s*key)\\s*[:：]?\\s*([A-Za-z0-9!@#$%^&*._-]{8,63})/i);if(m){password=m[1];break}}}"
-          if anchor not in s: raise RuntimeError('OCR password parser missing')
-          s=s.replace(anchor,extra+anchor)
-          anchor="const list=$('ocrCandidates');list.replaceChildren();"
-          extra="if(target==='both'){const combined={ssid:'',password:''};for(const r of results){const v=parseLabel(r.text);if(v.ssid&&!combined.ssid)combined.ssid=v.ssid;if(v.password&&!combined.password)combined.password=v.password}if(combined.ssid)$('ssid').value=combined.ssid;if(combined.password)$('password').value=combined.password}"
-          if anchor not in s: raise RuntimeError('OCR candidates anchor missing')
-          s=s.replace(anchor,extra+anchor)
-          s=s.replace("if(!filled){apply();filled=true}","if(!filled){if(target!=='both')apply();else if(v.password&&!$('password').value)$('password').value=v.password;filled=true}")
-          p.write_text(s)
-          PY
+          node --check wifi-project/app/src/main/assets/app.js
+          node --check wifi-project/app/src/main/assets/poster.js
+          grep -q 'MLKit-full' wifi-project/app/src/main/java/com/hongja/ktwifi/MainActivity.java
       - name: Build APK
         working-directory: wifi-project
         run: gradle :app:assembleDebug --no-daemon
@@ -53,5 +36,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: KT-WIFI-QR-1.6.2-Poster-v9-APK
+          name: KT-WIFI-QR-1.6.2-Poster-v10-APK
           path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
