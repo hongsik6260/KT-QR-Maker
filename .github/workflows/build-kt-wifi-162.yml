@@ -6,6 +6,7 @@ on:
       - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'
       - '.github/workflows/build-kt-wifi-162.yml'
       - '.github/scripts/patch_v11.py'
+      - '.github/scripts/patch_v12.py'
       - '.github/scripts/patch_v13.py'
   workflow_dispatch:
 jobs:
@@ -26,8 +27,8 @@ jobs:
           unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
       - name: Apply existing v11 fixes
         run: python3 .github/scripts/patch_v11.py wifi-project
-      - name: Apply v13 OCR and poster corrections
-        run: python3 .github/scripts/patch_v13.py wifi-project
+      - name: Apply v12 OCR and poster corrections
+        run: python3 .github/scripts/patch_v12.py wifi-project
       - name: Apply v13 QR and phone corrections
         run: python3 .github/scripts/patch_v13.py wifi-project
       - name: Validate JavaScript and sample OCR parsing
