@@ -32,7 +32,7 @@ jobs:
         run: |
           node --check wifi-project/app/src/main/assets/app.js
           node --check wifi-project/app/src/main/assets/poster.js
-          grep -q 'MLKit-full-Korean' wifi-project/app/src/main/assets/app.js
+          grep -q 'KoreanTextRecognizerOptions' wifi-project/app/src/main/java/com/hongja/ktwifi/MainActivity.java
           grep -q 'text-recognition-korean' wifi-project/app/build.gradle
           node - <<'NODE'
           const fs=require('fs'),vm=require('vm'),assert=require('assert');
