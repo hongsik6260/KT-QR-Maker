@@ -7,6 +7,8 @@ on:
       - '.github/workflows/build-kt-wifi-162.yml'
       - '.github/scripts/patch_v11.py'
       - '.github/scripts/patch_v12.py'
+      - '.github/scripts/patch_v13.py'
+      - '.github/scripts/patch_v14.py'
       - '.github/scripts/patch_v15.py'
   workflow_dispatch:
 jobs:
@@ -29,10 +31,10 @@ jobs:
         run: python3 .github/scripts/patch_v11.py wifi-project
       - name: Apply v12 OCR and poster corrections
         run: python3 .github/scripts/patch_v12.py wifi-project
-      - name: Apply v15 QR and phone corrections
-        run: python3 .github/scripts/patch_v15.py wifi-project
-      - name: Apply v15 QR and phone corrections
-        run: python3 .github/scripts/patch_v15.py wifi-project
+      - name: Apply v13 QR and phone corrections
+        run: python3 .github/scripts/patch_v13.py wifi-project
+      - name: Apply v14 QR and phone corrections
+        run: python3 .github/scripts/patch_v14.py wifi-project
       - name: Apply v15 QR and phone alignment
         run: python3 .github/scripts/patch_v15.py wifi-project
       - name: Validate JavaScript and sample OCR parsing
