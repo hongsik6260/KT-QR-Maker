@@ -1,0 +1,38 @@
+name: Build KT WiFi QR v18 Branded APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [kt-qr-poster-v1]
+    paths: ['.github/workflows/build-v18.yml', '.github/scripts/brand_v18.py']
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare project
+        run: |
+          mkdir -p wifi-project
+          unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
+          for v in 11 12 13 14 15 16 17; do python3 .github/scripts/patch_v${v}.py wifi-project; done
+      - name: Apply app icon and name
+        run: |
+          python3 -m pip install Pillow
+          python3 .github/scripts/brand_v18.py wifi-project
+      - name: Validate JavaScript
+        run: |
+          node --check wifi-project/app/src/main/assets/app.js
+          node --check wifi-project/app/src/main/assets/poster.js
+      - name: Build APK
+        working-directory: wifi-project
+        run: gradle :app:assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KT-WIFI-QR-v18-Branded-APK
+          path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
