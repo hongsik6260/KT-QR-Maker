@@ -10,6 +10,8 @@ on:
       - '.github/scripts/patch_v13.py'
       - '.github/scripts/patch_v14.py'
       - '.github/scripts/patch_v15.py'
+      - '.github/scripts/patch_v16.py'
+      - '.github/scripts/patch_v17.py'
 
 
   workflow_dispatch:
@@ -39,8 +41,8 @@ jobs:
         run: python3 .github/scripts/patch_v14.py wifi-project
       - name: Apply v15 QR and phone alignment
         run: python3 .github/scripts/patch_v15.py wifi-project
-      - name: Apply v17 phone centering
-        run: python3 .github/scripts/patch_v17.py wifi-project
+      - name: Apply v16 phone centering
+        run: python3 .github/scripts/patch_v16.py wifi-project
       - name: Apply v17 phone position adjustment
         run: python3 .github/scripts/patch_v17.py wifi-project
       - name: Validate JavaScript and sample OCR parsing
