@@ -1,0 +1,26 @@
+name: Build KT WiFi QR PC
+on:
+  workflow_dispatch:
+  push:
+    branches: [kt-qr-poster-v1]
+    paths: ['pc/**', '.github/workflows/build-pc.yml']
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Extract existing KT poster background
+        shell: pwsh
+        run: |
+          python -c "import zipfile,pathlib; z=zipfile.ZipFile('KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'); names=[n for n in z.namelist() if n.endswith('/kt_background.png')]; assert names, 'kt_background.png missing'; pathlib.Path('pc/kt_background.png').write_bytes(z.read(names[0])); print(names[0])"
+      - name: Install packaging dependencies
+        run: python -m pip install pillow qrcode pyinstaller
+      - name: Package Windows executable
+        run: pyinstaller --noconfirm --onefile --windowed --name KT-WIFI-QR-PC --add-data "pc/kt_background.png;." pc/kt_wifi_qr_pc.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KT-WIFI-QR-PC-Windows
+          path: dist/KT-WIFI-QR-PC.exe
