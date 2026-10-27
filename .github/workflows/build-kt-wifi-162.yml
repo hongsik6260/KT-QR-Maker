@@ -1,4 +1,4 @@
-name: Build KT WiFi QR 1.6.2 v12 APK
+name: Build KT WiFi QR 1.6.2 v13 APK
 on:
   push:
     branches: [kt-qr-poster-v1]
@@ -6,7 +6,7 @@ on:
       - 'KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'
       - '.github/workflows/build-kt-wifi-162.yml'
       - '.github/scripts/patch_v11.py'
-      - '.github/scripts/patch_v12.py'
+      - '.github/scripts/patch_v13.py'
   workflow_dispatch:
 jobs:
   build:
@@ -26,8 +26,10 @@ jobs:
           unzip -o KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip -d wifi-project
       - name: Apply existing v11 fixes
         run: python3 .github/scripts/patch_v11.py wifi-project
-      - name: Apply v12 OCR and poster corrections
-        run: python3 .github/scripts/patch_v12.py wifi-project
+      - name: Apply v13 OCR and poster corrections
+        run: python3 .github/scripts/patch_v13.py wifi-project
+      - name: Apply v13 QR and phone corrections
+        run: python3 .github/scripts/patch_v13.py wifi-project
       - name: Validate JavaScript and sample OCR parsing
         run: |
           node --check wifi-project/app/src/main/assets/app.js
@@ -52,15 +54,15 @@ jobs:
           assert.strictEqual(parse(cases[4][0]).ssid,'KT_GiGA_5G_8E3C');
           console.log('5 synthetic OCR parser cases passed; real photo OCR not verified.');
           NODE
-      - name: Build normal v12 APK
+      - name: Build normal v13 APK
         working-directory: wifi-project
         run: gradle :app:assembleDebug --no-daemon
       - name: Upload normal APK
         uses: actions/upload-artifact@v4
         with:
-          name: KT-WIFI-QR-v12-APK
+          name: KT-WIFI-QR-v13-APK
           path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
-      - name: Prepare side-by-side v12 test app
+      - name: Prepare side-by-side v13 test app
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -68,18 +70,18 @@ jobs:
           s=p.read_text()
           old="applicationId 'com.hongja.ktwifi'"
           if old not in s: raise RuntimeError('Application ID not found')
-          p.write_text(s.replace(old,"applicationId 'com.hongja.ktwifi.testv12'"))
+          p.write_text(s.replace(old,"applicationId 'com.hongja.ktwifi.testv13'"))
           p=Path('wifi-project/app/src/main/AndroidManifest.xml')
           s=p.read_text()
           s=s.replace('android:name=".MainActivity"','android:name="com.hongja.ktwifi.MainActivity"')
-          s=s.replace('android:label="KT WIFI QR생성"','android:label="KT WIFI QR v12"')
+          s=s.replace('android:label="KT WIFI QR생성"','android:label="KT WIFI QR v13"')
           p.write_text(s)
           PY
       - name: Build side-by-side test APK
         working-directory: wifi-project
         run: gradle :app:assembleDebug --no-daemon
-      - name: Upload side-by-side v12 APK
+      - name: Upload side-by-side v13 APK
         uses: actions/upload-artifact@v4
         with:
-          name: KT-WIFI-QR-v12-Test-Install-APK
+          name: KT-WIFI-QR-v13-Test-Install-APK
           path: wifi-project/app/build/outputs/apk/debug/app-debug.apk
