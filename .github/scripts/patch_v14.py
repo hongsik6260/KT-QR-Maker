@@ -38,10 +38,12 @@ for p in assets.rglob("*"):
  def fix(m):
   tag=m.group(0)
   if "posterPhone" not in tag:return tag
-  tag=re.sub(r'\\btype\\s*=\\s*(["\\\'])\\s*(?:number|tel)\\1','type="text"',tag)
-  tag=re.sub(r'\\binputmode\\s*=\\s*(["\\\'])[^"\\\']*\\1','inputmode="text"',tag)
-  tag=re.sub(r'\\bpattern\\s*=\\s*(["\\\'])[^"\\\']*\\1','',tag)
+  for old in ('type="number"',"type='number'",'type="tel',"type='tel'"):
+   tag=tag.replace(old,'type="text"')
+  for old in ('inputmode="numeric"','inputmode="tel"',"inputmode='numeric'","inputmode='tel'"):
+   tag=tag.replace(old,'inputmode="text"')
+  tag=tag.replace('pattern="[0-9]*"','').replace('pattern="[0-9-]*"','')
   return tag
- t=re.sub(r'<input\\b[^>]*>',fix,t,flags=re.I)
+ t=re.sub('<input[^>]*>',fix,t,flags=re.I)
  if t!=before:p.write_text(t,encoding="utf-8");changed+=1
 print("v14: QR no quiet-zone pixels, frame inset 10px; phone input files changed",changed)
