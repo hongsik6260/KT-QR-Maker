@@ -15,7 +15,7 @@ jobs:
       - name: Extract existing KT poster background
         shell: pwsh
         run: |
-          python -c "import zipfile,pathlib; z=zipfile.ZipFile('KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'); names=[n for n in z.namelist() if n.endswith('/kt_background.png')]; assert names, 'kt_background.png missing'; pathlib.Path('pc/kt_background.png').write_bytes(z.read(names[0])); print(names[0])"
+          python -c "import zipfile,pathlib; z=zipfile.ZipFile('KT-WIFI-QR-1.6.2-Poster-Android-Project-v5.zip'); names=[n for n in z.namelist() if n.lower().endswith('kt_background.png')]; print('found:',names); assert names, 'Background not present in project archive'; pathlib.Path('pc/kt_background.png').write_bytes(z.read(names[0]))"
       - name: Install packaging dependencies
         run: python -m pip install pillow qrcode pyinstaller
       - name: Package Windows executable
