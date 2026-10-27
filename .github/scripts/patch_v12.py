@@ -151,9 +151,9 @@ poster_file=assets/"poster.js"
 poster=poster_file.read_text(encoding="utf-8")
 poster=replace_between(poster,"const side=Math.min(","}catch(e){",r'''
 // Keep all four quiet-zone modules, but maximize QR within the existing red frame.
-// Background design dimensions: 1054x1492; frame x=366..684, y=855..1139.
-const frame={left:w*.350,right:w*.650,top:h*.574,bottom:h*.762};
-const safe=Math.max(6,Math.round(w*.006));
+// Measured on the actual 1054x1492 background: frame x=377..704, y=879..1172.
+const frame={left:w*.356,right:w*.670,top:h*.588,bottom:h*.787};
+const safe=Math.max(12,Math.round(w*.012));
 const qrSide=Math.floor(Math.min(frame.right-frame.left-2*safe,frame.bottom-frame.top-2*safe));
 const left=Math.round((frame.left+frame.right-qrSide)/2);
 const top=Math.round((frame.top+frame.bottom-qrSide)/2);
@@ -171,7 +171,7 @@ x.restore();
 poster=replace_between(poster,"x.textAlign='left';x.textBaseline='middle';","msg.textContent='홍보물 생성 완료.",r'''
 // Background input fields start after the printed red labels at x=485.
 // Fit by font size (not horizontal stretching) inside the white rounded rectangles.
-const fieldLeft=w*.483,fieldRight=w*.755,fieldWidth=fieldRight-fieldLeft;
+const fieldLeft=w*.483,fieldRight=w*.772,fieldWidth=fieldRight-fieldLeft;
 function drawField(value,y){
  const str=String(value||'');
  let font=Math.round(w*.032),minimum=Math.max(13,Math.round(w*.013));
@@ -179,17 +179,17 @@ function drawField(value,y){
  do{x.font='bold '+font+'px sans-serif';if(x.measureText(str).width<=fieldWidth||font<=minimum)break;font--;}while(font>minimum);
  x.fillText(str,fieldLeft,y,fieldWidth);
 }
-drawField(ssid,h*.791);
-drawField(sec==='nopass'?'없음':pw,h*.841);
+drawField(ssid,h*.815);
+drawField(sec==='nopass'?'없음':pw,h*.866);
 const phone=$('posterPhone').value.trim();
 if(phone){
  x.textAlign='center';x.fillStyle='#fff';
  x.font='bold '+Math.round(w*.045)+'px sans-serif';
- const metrics=x.measureText(phone),centerY=h*.926;
+ const metrics=x.measureText(phone),centerY=h*.953;
  const ascent=metrics.actualBoundingBoxAscent||w*.035;
  const descent=metrics.actualBoundingBoxDescent||w*.006;
  x.textBaseline='alphabetic';
- x.fillText(phone,w*.674,centerY+(ascent-descent)/2,w*.52);
+ x.fillText(phone,w*.694,centerY+(ascent-descent)/2,w*.52);
 }
 ''')
 poster_file.write_text(poster,encoding="utf-8")
